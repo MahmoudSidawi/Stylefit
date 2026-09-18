@@ -1,0 +1,28 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+# JavaScript
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage/
+# Editors, operating system, and logs
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
