@@ -1,0 +1,82 @@
+[
+  {
+    "id": "architecte",
+    "name": "L'Architecte Blazer",
+    "description": "Sand Raw Linen • Calibrated Shoulder",
+    "price": 420,
+    "category": "blazers",
+    "sizes": ["36", "38", "40", "42"],
+    "match": 96,
+    "note": "Pairs with your olive trousers"
+  },
+  {
+    "id": "nocturne",
+    "name": "Nocturne Silk Blouse",
+    "description": "100% Mulberry Satin • Fluid Neckline",
+    "price": 290,
+    "category": "silk",
+    "sizes": ["XS", "S", "M", "L"],
+    "match": 98,
+    "note": "Blends with gold chain & espresso skirts"
+  },
+  {
+    "id": "sienna",
+    "name": "Sienna Pleated Pant",
+    "description": "Crepe Wool Blend • High Rise",
+    "price": 310,
+    "category": "trousers",
+    "sizes": ["34", "36", "38", "40"],
+    "match": 94,
+    "note": "Zero hem adjustments needed"
+  },
+  {
+    "id": "polo",
+    "name": "Atelier Rib Knit Polo",
+    "description": "Organic Cotton & Silk • Sage Taupe",
+    "price": 240,
+    "category": "knitwear",
+    "sizes": ["XS", "S", "M", "L"],
+    "match": 91,
+    "note": "Recommended for casual gallery outings"
+  },
+  {
+    "id": "trench",
+    "name": "Palais Fluid Trench",
+    "description": "Twill Viscose • Storm Flap Detail",
+    "price": 540,
+    "category": "outerwear",
+    "sizes": ["36", "38", "40"],
+    "match": 95,
+    "note": "Calibrated for seasonal layer versatility"
+  },
+  {
+    "id": "camisole",
+    "name": "Étoile Bias Camisole",
+    "description": "Washed Silk Habotai • Terracotta Hue",
+    "price": 195,
+    "category": "silk",
+    "sizes": ["XS", "S", "M"],
+    "match": 97,
+    "note": "Direct tone match with your Capsule Trench"
+  },
+  {
+    "id": "palazzo",
+    "name": "Colonne Palazzo Trouser",
+    "description": "Linen & Tencel Weave • High Rise",
+    "price": 340,
+    "category": "trousers",
+    "sizes": ["36", "38", "40"],
+    "match": 93,
+    "note": "Seamless waist silhouette contouring"
+  },
+  {
+    "id": "prune",
+    "name": "Prune Structuré Jacket",
+    "description": "Compact Wool Blend • Deep Plum",
+    "price": 480,
+    "category": "blazers",
+    "sizes": ["36", "38", "40", "42"],
+    "match": 99,
+    "note": "Harmonizes with 100% of your saved accessories"
+  }
+]

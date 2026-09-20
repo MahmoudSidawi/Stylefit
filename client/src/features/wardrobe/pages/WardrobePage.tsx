@@ -1,0 +1,271 @@
+import { useEffect, useState } from 'react'
+import { StorefrontHeader } from '../../../components/layout/StorefrontHeader'
+import { StorefrontFooter } from '../../../components/layout/StorefrontFooter'
+import { Dialog } from '../../../components/ui/Dialog'
+import { Icon } from '../../../components/ui/Icon'
+import { useDemoShop } from '../../products/hooks/useDemoShop'
+import { useWardrobe } from '../hooks/useWardrobe'
+import { WardrobeOverview } from '../components/WardrobeOverview'
+import { WardrobeCard } from '../components/WardrobeCard'
+import { GarmentForm } from '../components/GarmentForm'
+import { colors, kinds, wardrobeCategories } from '../data/options'
+import type { WardrobeCategory, WardrobeDraft, WardrobeItem } from '../types'
+import '../../products/styles/catalogue.css'
+import '../styles/wardrobe.css'
+
+type WardrobeDialog =
+  | { type: 'add'; file?: File }
+  | { type: 'edit' | 'remove'; item: WardrobeItem }
+  | null
+
+export default function WardrobePage() {
+  const wardrobe = useWardrobe()
+  const shop = useDemoShop()
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState<WardrobeCategory>('all')
+  const [dialog, setDialog] = useState<WardrobeDialog>(null)
+  const [message, setMessage] = useState('')
+  const [dropError, setDropError] = useState('')
+  const visible = wardrobe.items.filter(
+    (item) =>
+      (category === 'all' || kinds[item.kind].category === category) &&
+      `${item.name} ${item.material} ${colors[item.color].label} ${kinds[item.kind].label}`
+        .toLowerCase()
+        .includes(query.trim().toLowerCase()),
+  )
+  useEffect(() => {
+    document.title = 'Your Wardrobe — StyleFit'
+    return () => {
+      document.title = 'StyleFit'
+    }
+  }, [])
+  useEffect(() => {
+    if (!message) return
+    const timer = window.setTimeout(() => setMessage(''), 5000)
+    return () => window.clearTimeout(timer)
+  }, [message])
+  function openAdd() {
+    setDropError('')
+    setDialog({ type: 'add' })
+  }
+  function save(draft: WardrobeDraft, id?: string) {
+    const success = wardrobe.save(draft, id)
+    if (success) {
+      setQuery('')
+      setCategory('all')
+      setMessage(
+        id
+          ? 'Garment details updated.'
+          : 'Your new piece is saved in this browser.',
+      )
+    }
+    return success
+  }
+  return (
+    <div className="storefront wardrobe-page">
+      <StorefrontHeader
+        query={query}
+        onSearch={setQuery}
+        contentId="wardrobe-content"
+        searchLabel="Search your wardrobe"
+        bagCount={shop.bag.reduce((sum, item) => sum + item.quantity, 0)}
+      />
+      <main className="store-main" id="wardrobe-content" tabIndex={-1}>
+        <div className="wardrobe-container">
+          <div className="wardrobe-heading">
+            <div>
+              <h1>Your Wardrobe</h1>
+              <span className="wardrobe-count">
+                {wardrobe.items.length} Curated{' '}
+                {wardrobe.items.length === 1 ? 'Item' : 'Items'}
+              </span>
+              <span className="wardrobe-edition">Your everyday edit</span>
+            </div>
+            <div className="wardrobe-heading-actions">
+              <button className="button button-primary" onClick={openAdd}>
+                <Icon name="plus" size={17} /> Add Clothes
+              </button>
+              <button
+                className="button button-lavender"
+                disabled
+                title="Cloud sync and AI image recognition are not connected"
+              >
+                <Icon name="sparkles" size={17} /> AI Sync · Coming soon
+              </button>
+            </div>
+          </div>
+          <WardrobeOverview
+            items={wardrobe.items}
+            onAdd={openAdd}
+            onDrop={(files) => {
+              if (files.length !== 1) {
+                setDropError('Add one garment photo at a time.')
+                return
+              }
+              setDropError('')
+              setDialog({ type: 'add', file: files[0] })
+            }}
+          />
+          {dropError && (
+            <p className="wardrobe-notice" role="alert">
+              {dropError}
+            </p>
+          )}
+          {wardrobe.error && (
+            <p className="wardrobe-notice" role="alert">
+              {wardrobe.error}
+            </p>
+          )}
+          <section
+            className="wardrobe-collection"
+            aria-label="Your clothing collection"
+          >
+            <div className="wardrobe-filters">
+              <div>
+                <span className="overline">Catalog filter</span>
+                <i />
+                <span role="status">
+                  Showing {visible.length} of {wardrobe.items.length} garments
+                </span>
+              </div>
+              <div className="wardrobe-filter-chips">
+                {wardrobeCategories.map((option) => (
+                  <button
+                    key={option.id}
+                    aria-pressed={category === option.id}
+                    onClick={() => setCategory(option.id)}
+                  >
+                    {option.label} (
+                    {
+                      wardrobe.items.filter(
+                        (item) =>
+                          option.id === 'all' ||
+                          kinds[item.kind].category === option.id,
+                      ).length
+                    }
+                    )
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="wardrobe-local-note">
+              <Icon name="info" size={13} />{' '}
+              {wardrobe.items.filter((item) => item.sample).length} sample
+              pieces · Your additions are saved only in this browser.
+            </p>
+            {visible.length ? (
+              <div className="wardrobe-grid">
+                {visible.map((item) => (
+                  <WardrobeCard
+                    key={item.id}
+                    item={item}
+                    onEdit={(entry) => setDialog({ type: 'edit', item: entry })}
+                    onRemove={(entry) =>
+                      setDialog({ type: 'remove', item: entry })
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="wardrobe-empty">
+                <Icon name="hanger" size={40} />
+                <h2>
+                  {wardrobe.items.length
+                    ? 'A different starting point?'
+                    : 'Your wardrobe, waiting to happen.'}
+                </h2>
+                <p>
+                  {wardrobe.items.length
+                    ? 'No garments match this search or category. Try another filter.'
+                    : 'Add your first piece and start making new combinations.'}
+                </p>
+                <button
+                  className="button button-primary"
+                  onClick={
+                    wardrobe.items.length
+                      ? () => {
+                          setQuery('')
+                          setCategory('all')
+                        }
+                      : openAdd
+                  }
+                >
+                  {wardrobe.items.length
+                    ? 'Show all garments'
+                    : 'Add your first garment'}
+                </button>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+      <StorefrontFooter />
+      <div
+        className={`shop-toast${message && !dialog ? ' visible' : ''}`}
+        role="status"
+        aria-atomic="true"
+      >
+        {message && !dialog && (
+          <>
+            <Icon name="check" />
+            <span>{message}</span>
+            <button
+              className="icon-button"
+              aria-label="Dismiss notification"
+              onClick={() => setMessage('')}
+            >
+              <Icon name="close" size={16} />
+            </button>
+          </>
+        )}
+      </div>
+      {(dialog?.type === 'add' || dialog?.type === 'edit') && (
+        <GarmentForm
+          item={dialog.type === 'edit' ? dialog.item : undefined}
+          initialFile={dialog.type === 'add' ? dialog.file : undefined}
+          onClose={() => setDialog(null)}
+          onSave={save}
+          storageError={wardrobe.error}
+        />
+      )}
+      {dialog?.type === 'remove' && (
+        <Dialog title="Remove this piece?" onClose={() => setDialog(null)}>
+          <div className="remove-garment-preview">
+            <img src={dialog.item.image} alt="" />
+            <div>
+              <h3>{dialog.item.name}</h3>
+              <p>
+                This removes the item from this browser’s wardrobe. Saved looks
+                containing it will no longer be available.
+              </p>
+            </div>
+          </div>
+          {wardrobe.error && (
+            <p className="wardrobe-field-error" role="alert">
+              {wardrobe.error}
+            </p>
+          )}
+          <div className="garment-form-actions">
+            <button
+              className="button button-surface"
+              onClick={() => setDialog(null)}
+            >
+              Keep garment
+            </button>
+            <button
+              className="button button-primary"
+              onClick={() => {
+                if (wardrobe.remove(dialog.item.id)) {
+                  setDialog(null)
+                  setMessage('Piece removed from your wardrobe.')
+                }
+              }}
+            >
+              Remove garment
+            </button>
+          </div>
+        </Dialog>
+      )}
+    </div>
+  )
+}

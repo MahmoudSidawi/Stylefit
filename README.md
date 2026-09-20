@@ -4,17 +4,19 @@ A beginner-friendly foundation for a 10-day project: React, Vite, TypeScript, Re
 
 The supplied [BRD](docs/StyleFit_BRD.docx) and [ERD](docs/StyleFit_ERD.drawio) have been reviewed and copied unchanged into `docs/`. Their scope and exact entity names and relationships are recorded in [scope.md](docs/scope.md) and [erd-reference.md](docs/erd-reference.md).
 
-This task remains foundation-only. Database tables, migrations, database entity types, storage buckets, business features, and AI integration are deferred. The ERD's `users.password_hash` field and its integration with the requested Supabase Authentication need resolution before database implementation; the diagram has not been redesigned.
+Five frontend pages are implemented: Storefront, Outfit Harmony Studio, Your Wardrobe, Shopping Bag, and Checkout. See [the storefront handoff](docs/storefront-handoff.md), [the matcher handoff](docs/matcher-handoff.md), and [the final three pages handoff](docs/remaining-pages-handoff.md) for working interactions, verification, and screenshots. Database tables, migrations, storage buckets, and real AI integration remain deferred. The ERD's `users.password_hash` field and its integration with the requested Supabase Authentication need resolution before database implementation; the diagram has not been redesigned.
 
 ## Current scope
 
-The client contains 14 placeholder pages and shared navigation. The server exposes `GET /health`, returning `{"status":"ok"}`, with a Pydantic response model and local CORS configuration.
+The client opens the responsive Storefront at `/catalogue`, with sample products, filters, product previews, favorites, and a local demo bag. `/matcher` provides the outfit canvas, source archive, saved looks, and clearly labeled local demo scoring. `/wardrobe` supports local photo uploads and garment management; `/cart` supports quantities, sizes, saved items, and a demo discount; `/checkout` validates details and previews an order without placing it. Other routes remain placeholders. The server exposes `GET /health`, returning `{"status":"ok"}`, with a Pydantic response model and local CORS configuration.
 
-Authentication, admin authorization, catalogue data, uploads, cart, wishlist, checkout, orders, personalization, and AI matching are not implemented. All page routes, including admin routes, are publicly reachable placeholders with no private data or actions.
+Authentication, admin authorization, live catalogue data, cloud uploads, payment processing, real orders, personalization, and AI matching are not connected. Favorites, bag selections, saved looks, and wardrobe photos use browser local storage for demonstration only. Checkout contact/address details remain in memory and are not persisted or sent. Routes are public; this frontend has no account access controls.
 
 The intended matcher uses manually selected wardrobe items, store items, or both, and explains color, style, pattern, and clothing-type compatibility. Its matching percentage is a **subjective styling estimate, not a guarantee of fit**. Optional height, weight, body shape, clothing size, and skin tone remain optional future personalization inputs.
 
 ## Structure
+
+The tree below describes the original foundation. New storefront code follows the feature-based structure documented in [storefront-handoff.md](docs/storefront-handoff.md), and the route entry is now `client/src/app/App.tsx`.
 
 ```text
 stylefit/
@@ -140,7 +142,7 @@ Before connecting real features, configure Supabase Auth's local site/redirect U
 | AdminProducts | `/admin/products` |
 | AdminOrders | `/admin/orders` |
 
-The catalogue links to `/products/placeholder` to demonstrate the dynamic product route. Unknown paths display a simple not-found placeholder.
+The home route redirects to `/catalogue`. Product previews open in catalogue dialogs, and the shared header links to the Shopping Bag page. Dedicated product, authentication, wishlist, orders, profile, and admin routes remain placeholders. Unknown paths display a simple not-found placeholder.
 
 ## Security requirements before implementing features
 
