@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { Icon } from '../../../components/ui/Icon'
 import { categories, products } from '../data/mockCatalogue'
-import type { Category, SortOrder } from '../types'
+import type { Category } from '../types'
 
 type Props = {
   category: Category
   setCategory: (category: Category) => void
-  sort: SortOrder
-  setSort: (sort: SortOrder) => void
   maxPrice: number
   setMaxPrice: (price: number) => void
   filterSize: string
@@ -21,8 +19,6 @@ type Props = {
 export function CatalogueFilters({
   category,
   setCategory,
-  sort,
-  setSort,
   maxPrice,
   setMaxPrice,
   filterSize,
@@ -32,92 +28,97 @@ export function CatalogueFilters({
   favoriteCount,
   resetFilters,
 }: Props) {
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [open, setOpen] = useState(false)
   return (
-    <>
-      <div className="filter-toolbar">
-        <div className="category-list" aria-label="Garment categories">
-          {categories.map((item) => (
-            <button
-              key={item.id}
-              className={`category-chip${category === item.id ? ' active' : ''}`}
-              aria-pressed={category === item.id}
-              onClick={() => setCategory(item.id)}
-            >
-              {item.label}{' '}
-              <span>
-                (
-                {
-                  products.filter(
-                    (p) => item.id === 'all' || p.category === item.id,
-                  ).length
-                }
-                )
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="sort-tools">
-          <label className="sort-field">
-            <span>Sort:</span>
-            <select
-              value={sort}
-              onChange={(event) => {
-                const value = event.target.value
-                if (
-                  value === 'editorial' ||
-                  value === 'match' ||
-                  value === 'price-asc' ||
-                  value === 'price-desc'
-                )
-                  setSort(value)
-              }}
-            >
-              <option value="editorial">Editorial order</option>
-              <option value="match">Sample match score</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-            </select>
-          </label>
-          <button
-            className={`icon-button filter-toggle${filtersOpen ? ' active' : ''}`}
-            aria-label="More filters"
-            aria-expanded={filtersOpen}
-            aria-controls="additional-filters"
-            onClick={() => setFiltersOpen(!filtersOpen)}
-          >
-            <Icon name="sliders" />
+    <aside className="clothes-sidebar" aria-label="Clothing filters">
+      <button
+        className="clothes-filter-toggle"
+        aria-expanded={open}
+        aria-controls="clothes-filter-panel"
+        onClick={() => setOpen(!open)}
+      >
+        <Icon name="sliders" />
+        {open ? 'Hide filters' : 'Show filters'}
+        <Icon name={open ? 'close' : 'plus'} size={16} />
+      </button>
+      <div
+        id="clothes-filter-panel"
+        className={`clothes-filter-panel${open ? ' is-open' : ''}`}
+      >
+        <div className="clothes-filter-heading">
+          <h2>
+            <Icon name="sliders" size={18} /> Filters
+          </h2>
+          <button className="text-button" onClick={resetFilters}>
+            Reset all
           </button>
         </div>
-      </div>
-      {filtersOpen && (
-        <div id="additional-filters" className="additional-filters">
-          <label className="price-filter">
-            Maximum price: <strong>${maxPrice}</strong>
-            <input
-              type="range"
-              min="150"
-              max="550"
-              step="10"
-              value={maxPrice}
-              onChange={(event) => setMaxPrice(Number(event.target.value))}
-            />
-          </label>
-          <label className="size-filter">
-            Size
-            <select
-              value={filterSize}
-              onChange={(event) => setFilterSize(event.target.value)}
+        <fieldset className="clothes-filter-group">
+          <legend>Category</legend>
+          {categories.map((item) => (
+            <label
+              className={`clothes-category${category === item.id ? ' selected' : ''}`}
+              key={item.id}
             >
-              <option value="all">All sizes</option>
-              {[...new Set(products.flatMap((product) => product.sizes))].map(
-                (size) => (
-                  <option key={size}>{size}</option>
-                ),
-              )}
-            </select>
+              <input
+                type="radio"
+                name="clothing-category"
+                value={item.id}
+                checked={category === item.id}
+                onChange={() => setCategory(item.id)}
+              />
+              <span>{item.label}</span>
+              <small>
+                {
+                  products.filter(
+                    (product) =>
+                      item.id === 'all' || product.category === item.id,
+                  ).length
+                }
+              </small>
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="clothes-filter-group">
+          <legend>Price range</legend>
+          <label className="clothes-price" htmlFor="clothes-price">
+            Up to <strong>${maxPrice}</strong>
           </label>
-          <label className="saved-filter">
+          <input
+            id="clothes-price"
+            type="range"
+            min="150"
+            max="550"
+            step="10"
+            value={maxPrice}
+            onChange={(event) => setMaxPrice(Number(event.target.value))}
+          />
+          <div className="clothes-price-limits">
+            <span>$150</span>
+            <span>$550</span>
+          </div>
+        </fieldset>
+        <fieldset className="clothes-filter-group">
+          <legend>Size</legend>
+          <div className="clothes-sizes">
+            {[
+              'all',
+              ...new Set(products.flatMap((product) => product.sizes)),
+            ].map((size) => (
+              <button
+                key={size}
+                aria-pressed={filterSize === size}
+                onClick={() => setFilterSize(size)}
+              >
+                {size === 'all' ? 'All sizes' : size}
+              </button>
+            ))}
+          </div>
+          <p>Sizes follow each garment’s label.</p>
+        </fieldset>
+        <fieldset className="clothes-filter-group">
+          <legend>Your edit</legend>
+          <label className="clothes-saved">
             <input
               type="checkbox"
               checked={savedOnly}
@@ -125,11 +126,13 @@ export function CatalogueFilters({
             />{' '}
             Saved only ({favoriteCount})
           </label>
-          <button className="text-button" onClick={resetFilters}>
-            Reset filters
-          </button>
+        </fieldset>
+        <div className="clothes-sidebar-note">
+          <Icon name="hanger" size={25} />
+          <h3>A wardrobe with intention.</h3>
+          <p>Find the pieces that work beautifully together.</p>
         </div>
-      )}
-    </>
+      </div>
+    </aside>
   )
 }

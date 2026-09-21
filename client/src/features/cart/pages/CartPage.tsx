@@ -122,7 +122,7 @@ export default function CartPage() {
                     bag to preview checkout.
                   </p>
                   <div>
-                    <Link className="button button-primary" to="/catalogue">
+                    <Link className="button button-primary" to="/clothes">
                       Explore the collection
                     </Link>
                     <button
@@ -148,7 +148,7 @@ export default function CartPage() {
                     ? 'Sample standard delivery is complimentary'
                     : 'Sample standard delivery: free from $300'}
                 </span>
-                <Link to="/catalogue">
+                <Link to="/clothes">
                   Add Another Piece <Icon name="arrow" size={14} />
                 </Link>
               </div>

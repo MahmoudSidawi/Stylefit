@@ -1,4 +1,5 @@
 import { Icon } from '../../../components/ui/Icon'
+import { Link } from 'react-router-dom'
 import hero from '../../../assets/storefront/hero.jpg'
 import detail from '../../../assets/storefront/silk-detail.jpg'
 
@@ -19,13 +20,9 @@ export function CollectionHero() {
           entirely your own.
         </p>
         <div className="hero-actions">
-          <button
-            className="button button-primary"
-            disabled
-            title="AI curation is not connected yet"
-          >
-            <Icon name="sparkles" /> Curate with AI · Soon
-          </button>
+          <Link className="button button-primary" to="/clothes">
+            Shop All Clothes <Icon name="arrow" />
+          </Link>
           <a className="button button-surface" href="#editorial">
             View Editorial Lookbook <Icon name="arrow" />
           </a>

@@ -1,6 +1,6 @@
 # Storefront — page 1 review
 
-The first implemented page is `/catalogue`; `/` redirects to it. The user approved this page. The second page, `/matcher`, is now ready for review; see [matcher-handoff.md](matcher-handoff.md). Other routes remain placeholders, and unavailable destinations and integrations are labeled as coming soon.
+The first implemented page is `/catalogue`; `/` redirects to it. The user approved this page. It now features four Best Sellers, while `/clothes` provides all eight catalogue products with filters on the left. See [the updated clothes handoff](clothes-handoff.md) for the current layout and verification. The sections below describe the original storefront implementation.
 
 ## Run
 

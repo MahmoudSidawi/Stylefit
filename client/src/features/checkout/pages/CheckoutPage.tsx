@@ -94,7 +94,7 @@ export default function CheckoutPage() {
               <Icon name="bag" size={40} />
               <h2>Your bag is waiting for its first piece.</h2>
               <p>Add something you love before exploring checkout.</p>
-              <Link to="/catalogue" className="button button-primary">
+              <Link to="/clothes" className="button button-primary">
                 Explore the collection
               </Link>
               <Link to="/cart" className="button button-surface">

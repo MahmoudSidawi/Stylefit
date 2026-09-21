@@ -4,11 +4,11 @@ A beginner-friendly foundation for a 10-day project: React, Vite, TypeScript, Re
 
 The supplied [BRD](docs/StyleFit_BRD.docx) and [ERD](docs/StyleFit_ERD.drawio) have been reviewed and copied unchanged into `docs/`. Their scope and exact entity names and relationships are recorded in [scope.md](docs/scope.md) and [erd-reference.md](docs/erd-reference.md).
 
-Five frontend pages are implemented: Storefront, Outfit Harmony Studio, Your Wardrobe, Shopping Bag, and Checkout. See [the storefront handoff](docs/storefront-handoff.md), [the matcher handoff](docs/matcher-handoff.md), and [the final three pages handoff](docs/remaining-pages-handoff.md) for working interactions, verification, and screenshots. Database tables, migrations, storage buckets, and real AI integration remain deferred. The ERD's `users.password_hash` field and its integration with the requested Supabase Authentication need resolution before database implementation; the diagram has not been redesigned.
+Eight frontend pages are implemented: Storefront, All Clothes, Outfit Harmony Studio, Your Wardrobe, Shopping Bag, Checkout, Login, and Registration. See [the storefront handoff](docs/storefront-handoff.md), [All Clothes](docs/clothes-handoff.md), [the matcher handoff](docs/matcher-handoff.md), [the three commerce pages handoff](docs/remaining-pages-handoff.md), and [the login and registration handoff](docs/auth-handoff.md) for working interactions, verification, and screenshots. Database tables, migrations, storage buckets, and real AI integration remain deferred. The ERD's `users.password_hash` field and its integration with the requested Supabase Authentication need resolution before database implementation; the diagram has not been redesigned.
 
 ## Current scope
 
-The client opens the responsive Storefront at `/catalogue`, with sample products, filters, product previews, favorites, and a local demo bag. `/matcher` provides the outfit canvas, source archive, saved looks, and clearly labeled local demo scoring. `/wardrobe` supports local photo uploads and garment management; `/cart` supports quantities, sizes, saved items, and a demo discount; `/checkout` validates details and previews an order without placing it. Other routes remain placeholders. The server exposes `GET /health`, returning `{"status":"ok"}`, with a Pydantic response model and local CORS configuration.
+The client opens the responsive Storefront at `/catalogue`, with four sample best sellers. `/clothes` provides the full collection, left-side filters, sorting, search, product previews, favorites, and a local demo bag. `/matcher` provides the outfit canvas, source archive, saved looks, and clearly labeled local demo scoring. `/wardrobe` supports local photo uploads and garment management; `/cart` supports quantities, sizes, saved items, and a demo discount; `/checkout` validates details and previews an order without placing it. `/login` and `/register` provide frontend form previews. Other routes remain placeholders. The server exposes `GET /health`, returning `{"status":"ok"}`, with a Pydantic response model and local CORS configuration.
 
 Authentication, admin authorization, live catalogue data, cloud uploads, payment processing, real orders, personalization, and AI matching are not connected. Favorites, bag selections, saved looks, and wardrobe photos use browser local storage for demonstration only. Checkout contact/address details remain in memory and are not persisted or sent. Routes are public; this frontend has no account access controls.
 
@@ -131,6 +131,7 @@ Before connecting real features, configure Supabase Auth's local site/redirect U
 | Login | `/login` |
 | Register | `/register` |
 | Catalogue | `/catalogue` |
+| All Clothes | `/clothes` |
 | ProductDetails | `/products/:productId` |
 | Wardrobe | `/wardrobe` |
 | Matcher | `/matcher` |
@@ -142,7 +143,7 @@ Before connecting real features, configure Supabase Auth's local site/redirect U
 | AdminProducts | `/admin/products` |
 | AdminOrders | `/admin/orders` |
 
-The home route redirects to `/catalogue`. Product previews open in catalogue dialogs, and the shared header links to the Shopping Bag page. Dedicated product, authentication, wishlist, orders, profile, and admin routes remain placeholders. Unknown paths display a simple not-found placeholder.
+The home route redirects to `/catalogue`. Product previews open in catalogue dialogs, and the shared header links to the Shopping Bag page. Login and registration provide validated frontend forms, with authentication still unconnected. Dedicated product, wishlist, orders, profile, and admin routes remain placeholders. Unknown paths display a simple not-found placeholder.
 
 ## Security requirements before implementing features
 

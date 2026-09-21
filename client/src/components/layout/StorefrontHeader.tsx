@@ -43,6 +43,9 @@ export function StorefrontHeader({
             <NavLink to="/catalogue" onClick={() => setMenuOpen(false)}>
               Storefront
             </NavLink>
+            <NavLink to="/clothes" onClick={() => setMenuOpen(false)}>
+              All Clothes
+            </NavLink>
             <NavLink to="/matcher" onClick={() => setMenuOpen(false)}>
               AI Matcher
             </NavLink>
@@ -67,13 +70,14 @@ export function StorefrontHeader({
                 onChange={(event) => onSearch(event.target.value)}
               />
             </label>
-            <span
+            <Link
               className="demo-avatar"
-              title="Guest preview"
-              aria-label="Guest preview"
+              to="/login"
+              title="Sign in to StyleFit"
+              aria-label="Sign in to StyleFit"
             >
               G
-            </span>
+            </Link>
             <Link
               className="icon-button mobile-bag"
               aria-label={`Open shopping bag, ${bagCount} items`}

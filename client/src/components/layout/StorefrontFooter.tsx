@@ -27,9 +27,7 @@ export function StorefrontFooter() {
         </div>
         <div>
           <h3>Maison</h3>
-          <a href={isCatalogue ? '#collection' : '/catalogue#collection'}>
-            Atelier Collections
-          </a>
+          <Link to="/clothes">Atelier Collections</Link>
           <Link to="/matcher">Outfit Harmony Studio</Link>
           <Link to="/wardrobe">Digital Archive</Link>
           <a href={isCatalogue ? '#editorial' : '/catalogue#editorial'}>
