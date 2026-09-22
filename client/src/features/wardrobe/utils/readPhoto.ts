@@ -1,8 +1,8 @@
 export async function readPhoto(file: File): Promise<string> {
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
-    throw new Error('Choose a JPG, PNG, or WebP photo.')
-  if (file.size > 2 * 1024 * 1024)
-    throw new Error('Choose a photo smaller than 2 MB.')
+  if (!['image/jpeg', 'image/png'].includes(file.type))
+    throw new Error('Choose a JPG or PNG photo.')
+  if (file.size > 5 * 1024 * 1024)
+    throw new Error('Choose a photo smaller than 5 MB.')
   if (!file.size) throw new Error('This photo is empty. Choose another file.')
   const data = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader()

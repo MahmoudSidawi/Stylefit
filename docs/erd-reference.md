@@ -1,3 +1,5 @@
+> Historical reference for the earlier project stage. See [backend.md](backend.md) for the current implementation and resolved database/authentication decisions.
+
 # ERD reference
 
 Transcribed from [StyleFit_ERD.drawio](StyleFit_ERD.drawio). Names, field markers, optional labels, and relationship cardinalities are preserved. This is documentation, not a migration or a redesigned schema.

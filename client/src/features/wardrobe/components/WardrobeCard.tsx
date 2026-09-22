@@ -7,7 +7,9 @@ export function WardrobeCard({
   item,
   onEdit,
   onRemove,
+  onAnalyze,
 }: {
+  onAnalyze?: (item: WardrobeItem) => void
   item: WardrobeItem
   onEdit: (item: WardrobeItem) => void
   onRemove: (item: WardrobeItem) => void
@@ -42,13 +44,14 @@ export function WardrobeCard({
         <h2>{item.name}</h2>
         <span>
           <i style={{ backgroundColor: colors[item.color].hex }} />
-          {colors[item.color].label}
+          {item.rawColor || colors[item.color].label}
         </span>
       </div>
       <div className="wardrobe-tags">
         <span>{item.material}</span>
         <span>Size {item.size}</span>
       </div>
+      {onAnalyze && <button className="button button-lavender" onClick={() => onAnalyze(item)}><Icon name="sparkles" size={16} /> Suggest details with AI</button>}
       <Link
         className="button button-primary"
         to={`/matcher?wardrobe=${encodeURIComponent(item.id)}`}

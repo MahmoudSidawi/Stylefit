@@ -36,11 +36,11 @@ export function calculateDemoMatch(
   )
   const drapes = new Set(
     pieces
-      .filter((piece) => piece.slot !== 'accessory')
       .map((piece) => piece.drape),
   )
-  const hasCore = pieces.some((piece) => piece.slot === 'core')
-  const hasAnchor = pieces.some((piece) => piece.slot === 'anchor')
+  const hasDress = pieces.some((piece) => piece.slot === 'dress')
+  const hasCore = hasDress || pieces.some((piece) => piece.slot === 'core')
+  const hasAnchor = hasDress || pieces.some((piece) => piece.slot === 'anchor')
   const color = tones.size > 1 ? 80 : tones.size === 1 ? 96 : 90
   const silhouette = Math.min(
     96,
@@ -62,9 +62,11 @@ export function calculateDemoMatch(
         ? 'Warm and cool accents create a stronger contrast.'
         : 'A consistent tonal family connects the selected pieces.',
     silhouetteNote:
-      hasCore && hasAnchor
-        ? 'A top and trouser anchor give this look a clear foundation.'
-        : 'Add a top and trousers for a more complete composition.',
+      hasDress
+        ? 'A dress gives this look a complete base.'
+        : hasCore && hasAnchor
+          ? 'A top and bottom give this look a clear foundation.'
+          : 'Add a top and bottom, or a dress, for a complete base.',
     occasionNote: `${aligned} of ${pieces.length} pieces have a sample ${occasionLabels[occasion].split(' / ')[1].toLowerCase()} tag.`,
     note: `${pieces.map((piece) => piece.colorName.toLowerCase()).join(', ')} brings ${tones.size > 1 ? 'contrasting accents' : 'a considered tonal rhythm'} to this composition. ${drapes.size > 1 ? 'A mix of structure and drape adds variety.' : 'Similar fabric weights keep the silhouette consistent.'} Try a different layer to explore another direction.`,
   }

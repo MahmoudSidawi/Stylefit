@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Dialog } from '../../../components/ui/Dialog'
 import { Icon } from '../../../components/ui/Icon'
-import { getGarment, occasionLabels } from '../data/garments'
-import type { SavedLook } from '../types'
+import { occasionLabels } from '../data/garments'
+import type { SavedLook, Garment } from '../types'
 
 export function SaveLookDialog({
   initialName,
@@ -72,11 +72,13 @@ export function SaveLookDialog({
 }
 
 export function SavedLooksDialog({
+  garments,
   looks,
   onLoad,
   onRemove,
   onClose,
 }: {
+  garments: Garment[]
   looks: SavedLook[]
   onLoad: (look: SavedLook) => void
   onRemove: (id: string) => void
@@ -101,7 +103,7 @@ export function SavedLooksDialog({
               <div className="saved-look-thumbnails">
                 {look.selection.slice(0, 3).map((entry) => (
                   <img
-                    src={getGarment(entry.garmentId)?.image}
+                    src={garments.find((g) => g.id === entry.garmentId)?.image}
                     key={entry.garmentId}
                     alt=""
                   />

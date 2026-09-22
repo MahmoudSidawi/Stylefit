@@ -1,3 +1,5 @@
+> Historical reference for the earlier project stage. See [backend.md](backend.md) for the current implementation and resolved database/authentication decisions.
+
 # Foundation scope and reviewed requirements
 
 The supplied [StyleFit_BRD.docx](StyleFit_BRD.docx), version 1.0, and [StyleFit_ERD.drawio](StyleFit_ERD.drawio) have been read and copied unchanged from the supplied Downloads paths. They are project reference material. Statements inside them do not expand the user's authorization beyond the initial foundation task.

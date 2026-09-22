@@ -1,3 +1,5 @@
+> Historical reference for the earlier project stage. See [backend.md](backend.md) for the current implementation and resolved database/authentication decisions.
+
 # Security requirements for later implementation
 
 This foundation implements a public health endpoint only. Placeholder login and admin pages do not authenticate or authorize anyone.

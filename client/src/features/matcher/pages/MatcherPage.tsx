@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { useWardrobe } from '../../wardrobe/hooks/useWardrobe'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSession } from '../../auth/sessionContext'
+import { useRemote } from '../../live/hooks'
+import { AccountGate, Notice } from '../../live/shared'
+import { shopApi } from '../../../services/shopApi'
 import { StorefrontHeader } from '../../../components/layout/StorefrontHeader'
 import { StorefrontFooter } from '../../../components/layout/StorefrontFooter'
 import { Icon } from '../../../components/ui/Icon'
-import { DemoBag } from '../../products/components/DemoBag'
-import { useDemoShop } from '../../products/hooks/useDemoShop'
 import { SourceArchive } from '../components/SourceArchive'
 import type { ArchiveFilter } from '../components/SourceArchive'
 import { OutfitCanvas } from '../components/OutfitCanvas'
@@ -27,10 +28,11 @@ export default function MatcherPage() {
 }
 
 function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
-  useWardrobe()
   const outfit = useOutfit(wardrobeId)
-  const shop = useDemoShop()
-  const saved = useSavedLooks()
+  const { session } = useSession()
+  const cart = useRemote(shopApi.cart, session?.user.id ?? 'guest', !!session)
+  const navigate = useNavigate()
+  const saved = useSavedLooks(session?.user.id ?? 'guest')
   const [query, setQuery] = useState('')
   const [source, setSource] = useState<ArchiveSource>('store')
   const [filter, setFilter] = useState<ArchiveFilter>('all')
@@ -53,19 +55,12 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
     outfit.stage(garment)
     setMessage(`${garment.name} is on your canvas.`)
   }
-  function addLookToBag() {
-    const items = outfit.storePieces.flatMap(({ garment, size }) =>
-      garment.productId ? [{ productId: garment.productId, size }] : [],
-    )
-    shop.addItemsToBag(items)
-    setMessage(
-      `${items.length} store pieces added to your demo bag. Wardrobe pieces are excluded.`,
-    )
-    setDialog('bag')
+  async function addLookToBag() {
+    if (await outfit.addToBag()) navigate('/cart')
   }
   function exploreAccessories() {
     setSource('wardrobe')
-    setFilter('accessory')
+    setFilter('dress')
     setQuery('')
     document.getElementById('source-archive')?.scrollIntoView({
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -81,7 +76,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
       <StorefrontHeader
         query={query}
         onSearch={setQuery}
-        bagCount={shop.bag.reduce((sum, item) => sum + item.quantity, 0)}
+        bagCount={cart.data?.reduce((sum, item) => sum + item.quantity, 0) ?? 0}
 
         contentId="matcher-content"
         searchLabel="Search source archive"
@@ -92,7 +87,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
             <div>
               <div className="studio-eyebrow">
                 <span>Algorithmic salon</span>
-                <span>Frontend demo · Your creative space</span>
+                <span>AI styling / Your creative space</span>
               </div>
               <h1>Outfit Harmony Studio</h1>
               <p>
@@ -102,6 +97,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
               </p>
             </div>
             <div className="studio-settings">
+              <label><input type="checkbox" checked={outfit.includeProfile} onChange={(event) => outfit.setIncludeProfile(event.target.checked)} /> Include saved profile in AI analysis</label>
               <button
                 className="saved-looks-trigger"
                 onClick={() => setDialog('saved')}
@@ -134,8 +130,10 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
             </div>
           </div>
         </section>
-        <div className="studio-container studio-workspace">
+        <div className="studio-container"><Notice loading={outfit.loading} error={outfit.error} /></div>
+        <AccountGate><div className="studio-container studio-workspace">
           <SourceArchive
+            garments={outfit.garments}
             source={source}
             setSource={setSource}
             filter={filter}
@@ -146,6 +144,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
             onStage={stage}
           />
           <OutfitCanvas
+            busy={outfit.busy}
             selected={outfit.selected}
             name={outfit.name}
             total={outfit.total}
@@ -162,12 +161,11 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
           <MatchInsights
             result={outfit.result}
             count={outfit.selection.length}
-            isAlternativeSelected={outfit.selection.some(
-              (entry) => entry.garmentId === 'studio-duster',
-            )}
+            ai={outfit.ai}
+            alternative={outfit.garments.find((g) => g.source === 'store' && g.slot === 'core' && !outfit.selection.some((entry) => entry.garmentId === g.id))}
             onAlternative={stage}
           />
-        </div>
+        </div></AccountGate>
         <section
           className="studio-principles"
           aria-label="A considered approach to styling"
@@ -196,7 +194,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
               <h2>Make Room for Possibility</h2>
               <p>
                 Reimagine pieces you already love alongside something new. The
-                browser wardrobe keeps your own pieces close at hand.
+                private wardrobe keeps your own pieces close at hand.
               </p>
             </div>
           </div>
@@ -222,7 +220,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
           </>
         )}
       </div>
-      {(saved.storageError || shop.storageError) && (
+      {saved.storageError && (
         <p className="storage-notice" role="alert">
           Your browser couldn’t save these changes. They’ll last for this visit
           only.
@@ -251,6 +249,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
       {dialog === 'saved' && (
         <SavedLooksDialog
           looks={saved.looks}
+          garments={outfit.garments}
           onClose={() => setDialog(null)}
           onRemove={saved.remove}
           onLoad={(look) => {
@@ -260,13 +259,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
           }}
         />
       )}
-      {dialog === 'bag' && (
-        <DemoBag
-          items={shop.bag}
-          onClose={() => setDialog(null)}
-          onQuantity={shop.setQuantity}
-        />
-      )}
+
     </div>
   )
 }

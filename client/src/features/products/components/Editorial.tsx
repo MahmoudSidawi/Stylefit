@@ -27,7 +27,7 @@ export function Editorial() {
           <div className="profile-card">
             <span className="overline">Your fit profile</span>
             <strong>A fresh canvas</strong>
-            <span>No measurements saved</span>
+            <span>Your measurements, your choice</span>
           </div>
           <button className="button button-primary" disabled>
             <Icon name="ruler" /> Sizing · Coming soon
@@ -76,7 +76,7 @@ export function Editorial() {
       </section>
       <div className="collection-end">
         <span>Capsule No. 04</span>
-        <span>8 considered pieces. Endless possibilities.</span>
+        <span>Considered pieces. Endless possibilities.</span>
         <a href="#collection">
           Back to collection <Icon name="arrow" size={16} />
         </a>

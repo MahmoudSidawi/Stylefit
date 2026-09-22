@@ -12,12 +12,7 @@ export function WardrobeOverview({
   onAdd: () => void
   onDrop: (files: FileList) => void
 }) {
-  const groups = [
-    { id: 'tops', label: 'Tops & Knits' },
-    { id: 'trousers', label: 'Trousers & Tailoring' },
-    { id: 'outerwear', label: 'Outerwear & Capes' },
-    { id: 'accessories', label: 'Shoes & Accessories' },
-  ]
+  const groups = [{ id: 'tops', label: 'Tops' }, { id: 'bottoms', label: 'Bottoms' }, { id: 'dresses', label: 'Dresses' }]
   const localCount = items.filter((item) => !item.sample).length
   return (
     <>
@@ -91,7 +86,7 @@ export function WardrobeOverview({
           <h2 id="photo-drop-title">Make room for your favorites</h2>
           <p>
             Photograph a garment in natural light, add a few details, and keep
-            it in your personal browser collection.
+            it in your private wardrobe.
           </p>
           <button className="photo-drop-button" onClick={onAdd}>
             <span>
@@ -100,7 +95,7 @@ export function WardrobeOverview({
             <Icon name="plus" size={16} />
           </button>
           <span className="photo-drop-hint">
-            Or drop one photo here · JPG, PNG, WebP · 2 MB
+            Or drop one photo here · JPG or PNG · 5 MB
           </span>
         </section>
       </div>

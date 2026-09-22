@@ -9,7 +9,7 @@ type Props = {
   item?: WardrobeItem
   initialFile?: File
   storageError: string
-  onSave: (draft: WardrobeDraft, id?: string) => boolean
+  onSave: (draft: WardrobeDraft, id?: string) => Promise<boolean>
   onClose: () => void
 }
 type Errors = Partial<Record<'name' | 'material' | 'size' | 'image', string>>
@@ -29,10 +29,11 @@ export function GarmentForm({
           material: '',
           size: '',
           image: '',
-          kind: 'knitwear',
+          kind: 't-shirts',
           color: 'cream',
         },
   )
+  const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
   const [photoError, setPhotoError] = useState('')
   const [reading, setReading] = useState(!!initialFile)
@@ -93,9 +94,9 @@ export function GarmentForm({
     }
   }, [initialFile])
 
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
+  async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (reading || photoError) return
+    if (saving || reading || photoError) return
     const next: Errors = {}
     if (draft.name.trim().length < 3)
       next.name = 'Enter a name with at least 3 characters.'
@@ -104,8 +105,8 @@ export function GarmentForm({
     if (!draft.image) next.image = 'Choose a photo of this garment.'
     setErrors(next)
     if (Object.keys(next).length) return
-    if (
-      onSave(
+    setSaving(true)
+    const success = await onSave(
         {
           ...draft,
           name: draft.name.trim(),
@@ -114,8 +115,8 @@ export function GarmentForm({
         },
         item?.id,
       )
-    )
-      onClose()
+    setSaving(false)
+    if (success) onClose()
   }
 
   return (
@@ -125,8 +126,7 @@ export function GarmentForm({
       wide
     >
       <p className="dialog-intro">
-        Add the details yourself. Photos stay in this browser; no AI recognition
-        or cloud upload takes place.
+        Your photo is saved privately to your account. After saving, you can ask AI to suggest garment details.
       </p>
       <form className="garment-form" noValidate onSubmit={submit}>
         <div className="garment-photo-field">
@@ -170,7 +170,7 @@ export function GarmentForm({
             ref={input}
             className="sr-only"
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png"
             tabIndex={-1}
             aria-label="Garment photo file"
             onChange={(event) => {
@@ -179,7 +179,7 @@ export function GarmentForm({
               event.target.value = ''
             }}
           />
-          <p id="photo-help">JPG, PNG, or WebP · Up to 2 MB</p>
+          <p id="photo-help">JPG or PNG · Up to 5 MB</p>
           <p
             id="photo-error"
             className="wardrobe-field-error"
@@ -291,8 +291,7 @@ export function GarmentForm({
           )}
           <p className="garment-form-note">
             <Icon name="info" size={15} /> Choose the closest color family.
-            These tags help organize your wardrobe and power the matcher’s local
-            demo rules.
+            These tags help organize your wardrobe and inform AI styling suggestions.
           </p>
           {storageError && (
             <p className="wardrobe-field-error" role="alert">
@@ -310,7 +309,7 @@ export function GarmentForm({
             <button
               className="button button-primary"
               type="submit"
-              disabled={reading || !!photoError}
+              disabled={saving || reading || !!photoError}
             >
               <Icon name="check" size={16} />
               {reading

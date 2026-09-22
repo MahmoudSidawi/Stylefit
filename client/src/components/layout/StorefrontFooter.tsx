@@ -44,8 +44,9 @@ export function StorefrontFooter() {
         <div>
           <h3>Ethics & AI</h3>
           <p>
-            This is a frontend preview. Products and styling scores are sample
-            data. No orders, payments, or AI processing take place.
+            AI styling scores are subjective estimates, not guarantees of fit.
+            Only selected wardrobe photos and optional details you choose to include
+            are sent for analysis. Orders use cash on delivery.
           </p>
         </div>
       </div>

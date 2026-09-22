@@ -1,13 +1,6 @@
-export type GarmentKind =
-  | 'knitwear'
-  | 'shirts'
-  | 'tailoring'
-  | 'denim'
-  | 'outerwear'
-  | 'footwear'
-  | 'accessories'
-export type WardrobeCategory =
-  'all' | 'tops' | 'trousers' | 'outerwear' | 'accessories'
+import type { WardrobeRecord } from '../../services/shopApi'
+export type GarmentKind = 't-shirts' | 'shirts' | 'hoodies' | 'jeans' | 'pants' | 'shorts' | 'skirts' | 'dresses'
+export type WardrobeCategory = 'all' | 'tops' | 'bottoms' | 'dresses'
 export type GarmentColor =
   | 'cream'
   | 'charcoal'
@@ -20,6 +13,8 @@ export type GarmentColor =
   | 'sage'
   | 'blue'
 export type WardrobeItem = {
+  record?: WardrobeRecord
+  rawColor?: string
   id: string
   name: string
   kind: GarmentKind

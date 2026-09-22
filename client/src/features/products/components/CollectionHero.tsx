@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import hero from '../../../assets/storefront/hero.jpg'
 import detail from '../../../assets/storefront/silk-detail.jpg'
 
-export function CollectionHero() {
+export function CollectionHero({ count = 24 }: { count?: number }) {
   return (
     <section className="collection-hero" aria-labelledby="collection-title">
       <div className="hero-copy">
@@ -33,8 +33,8 @@ export function CollectionHero() {
             <span>Every detail, intentional</span>
           </div>
           <div>
-            <strong>8</strong>
-            <span>Pieces in this preview</span>
+            <strong>{count}</strong>
+            <span>Everyday pieces</span>
           </div>
           <div>
             <strong>Yours</strong>

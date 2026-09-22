@@ -1,21 +1,20 @@
 import { Icon } from '../../../components/ui/Icon'
-import { getGarment } from '../data/garments'
+import type { AiMatch } from '../../../services/shopApi'
 import type { Garment, MatchResult } from '../types'
 
 export function MatchInsights({
   result,
   count,
-  isAlternativeSelected,
+  ai,
+  alternative,
   onAlternative,
 }: {
   result: MatchResult | null
   count: number
-  isAlternativeSelected: boolean
+  ai?: AiMatch | null
+  alternative?: Garment
   onAlternative: (garment: Garment) => void
 }) {
-  const alternative = getGarment(
-    isAlternativeSelected ? 'studio-blazer' : 'studio-duster',
-  )!
   return (
     <aside className="insights-column" aria-label="Outfit match results">
       <section className="fitting-engine" aria-labelledby="engine-title">
@@ -23,7 +22,7 @@ export function MatchInsights({
           <h2 id="engine-title">
             <Icon name="sparkles" size={20} /> Fitting Engine
           </h2>
-          <span className="engine-badge">Demo rules</span>
+          <span className="engine-badge">Groq AI</span>
         </div>
         <div className="score-panel" aria-live="polite">
           <div className="harmony-gauge">
@@ -49,7 +48,7 @@ export function MatchInsights({
                   '—'
                 )}
               </strong>
-              <span>Demo harmony score</span>
+              <span>Harmony score</span>
             </div>
           </div>
           <span className="score-caption">
@@ -71,7 +70,7 @@ export function MatchInsights({
               note: result?.colorNote,
             },
             {
-              title: 'Silhouette Equilibrium',
+              title: 'Clothing Compatibility',
               value: result?.silhouette,
               note: result?.silhouetteNote,
             },
@@ -98,14 +97,14 @@ export function MatchInsights({
                 aria-valuetext={
                   metric.value === undefined
                     ? 'Not checked'
-                    : `${metric.value}% demo score`
+                    : `${metric.value}% AI score`
                 }
               >
                 <span style={{ width: `${metric.value ?? 0}%` }} />
               </div>
               <p>
                 {metric.note ??
-                  'Check your current selection to see a demo breakdown.'}
+                  'Check your current selection to see an AI breakdown.'}
               </p>
             </div>
           ))}
@@ -114,49 +113,34 @@ export function MatchInsights({
           <h3>“ Curator note</h3>
           <p>
             {result?.note ??
-              'Choose pieces from either archive, then check the look. Try swapping a layer or changing the occasion to explore the sample styling rules.'}
+              'Choose pieces from either archive, then check the look. Try swapping a layer or changing the occasion to get new styling suggestions.'}
           </p>
           <span>
-            <Icon name="info" size={12} /> Local styling demo · No body
-            measurements
+            <Icon name="info" size={12} /> {ai?.used_profile ? 'Saved profile included' : 'Profile not included'}
           </span>
         </div>
-        <p className="match-disclaimer">
-          <Icon name="info" size={14} /> Illustrative, rule-based styling
-          estimates. No AI model is connected. These scores do not predict
-          garment fit.
-        </p>
-        <details className="rules-explainer">
-          <summary>How this demo is scored</summary>
-          <p>
-            Color (40%) compares warm, cool, and neutral tags. Silhouette (35%)
-            checks top/trouser coverage and fabric variety. Occasion (25%)
-            compares sample garment tags. Sizes are saved for your bag but do
-            not affect these scores.
-          </p>
-        </details>
+        {ai && <div className="curator-note"><h3>Suggestions</h3><ul>{ai.suggestions.map((text, index) => <li key={index}>{text}</li>)}</ul><p>Style: {ai.styles.score}% / {ai.styles.explanation}</p><p>Pattern: {ai.patterns.score}% / {ai.patterns.explanation}</p></div>}
+        <p className="match-disclaimer"><Icon name="info" size={14} />{ai?.disclaimer ?? 'AI styling suggestions are subjective and do not guarantee garment fit.'}</p>
       </section>
-      <section className="harmony-alternative">
+      {alternative && <section className="harmony-alternative">
         <div>
           <h3>Harmony alternatives</h3>
-          <span>Try a new layer</span>
+          <span>Try another top</span>
         </div>
         <button
           onClick={() => onAlternative(alternative)}
-          aria-label={`Swap layer for ${alternative.name}`}
+          aria-label={`Swap top for ${alternative.name}`}
         >
           <img src={alternative.image} alt="" />
           <span>
             <strong>{alternative.name}</strong>
             <small>
-              {isAlternativeSelected
-                ? 'Return to oatmeal warmth'
-                : 'Explore a deeper plum contrast'}
+              Explore another combination
             </small>
           </span>
           <Icon name="swap" size={17} />
         </button>
-      </section>
+      </section>}
     </aside>
   )
 }

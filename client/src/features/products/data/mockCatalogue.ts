@@ -1,23 +1,10 @@
 import catalogue from './catalogue.json'
 import type { Product } from '../types'
 
-const images = import.meta.glob<string>('../../../assets/storefront/*.jpg', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-})
-
-// Supplied design fixtures only. Match scores are not AI predictions.
-export const products: Product[] = catalogue.map((product) => ({
-  ...product,
-  image: images[`../../../assets/storefront/${product.id}.jpg`],
-}))
-
+export const products: Product[] = catalogue
 export const categories = [
-  { id: 'all', label: 'All Garments' },
-  { id: 'blazers', label: 'Tailored Blazers' },
-  { id: 'silk', label: 'Silk Tops & Camis' },
-  { id: 'trousers', label: 'Pleated Trousers' },
-  { id: 'knitwear', label: 'Fine Knitwear' },
-  { id: 'outerwear', label: 'Fluid Trench' },
+  { id: 'all', label: 'All Clothes', description: 'Everyday essentials' },
+  { id: 'tops', label: 'Tops', description: 'T-shirts, shirts, hoodies' },
+  { id: 'bottoms', label: 'Bottoms', description: 'Jeans, pants, shorts, skirts' },
+  { id: 'dresses', label: 'Dresses', description: 'Everyday dresses' },
 ] as const

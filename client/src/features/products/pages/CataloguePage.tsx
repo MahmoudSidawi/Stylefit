@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { StorefrontHeader } from '../../../components/layout/StorefrontHeader'
 import { StorefrontFooter } from '../../../components/layout/StorefrontFooter'
 import { Icon } from '../../../components/ui/Icon'
 import { CollectionHero } from '../components/CollectionHero'
 import { ProductCard } from '../components/ProductCard'
 import { ProductPreview } from '../components/ProductPreview'
-import { DemoBag } from '../components/DemoBag'
 import { Editorial } from '../components/Editorial'
 import { CatalogueFilters } from '../components/CatalogueFilters'
 import { CatalogueSort } from '../components/CatalogueSort'
-import { products } from '../data/mockCatalogue'
-import { bestSellers } from '../data/bestSellers'
-import { useDemoShop } from '../hooks/useDemoShop'
+import { shopApi } from '../../../services/shopApi'
+import { useSession } from '../../auth/sessionContext'
+import { useAction, useRemote } from '../../live/hooks'
+import { Notice } from '../../live/shared'
+import { toProduct, loadCatalogue } from '../data/apiCatalogue'
 import type { Category, Product, SortOrder } from '../types'
 import '../styles/catalogue.css'
 import '../styles/clothes.css'
@@ -37,30 +38,40 @@ export default function CataloguePage({
   }
   const [category, setCategory] = useState<Category>('all')
   const [sort, setSort] = useState<SortOrder>('editorial')
-  const [showNotes, setShowNotes] = useState(true)
+  const [showNotes, setShowNotes] = useState(false)
   const [savedOnly, setSavedOnly] = useState(false)
-  const [maxPrice, setMaxPrice] = useState(550)
+  const [maxPrice, setMaxPrice] = useState(100)
   const [filterSize, setFilterSize] = useState('all')
   const [preview, setPreview] = useState<Product | null>(null)
-  const [bagOpen, setBagOpen] = useState(false)
+  const navigate = useNavigate()
   const [announcement, setAnnouncement] = useState('')
-  const shop = useDemoShop()
-  const bagCount = shop.bag.reduce((sum, item) => sum + item.quantity, 0)
+  const { session } = useSession()
+  const catalogue = useRemote(loadCatalogue, 'catalogue')
+  const products = (catalogue.data?.items ?? []).map(toProduct)
+  const saved = useRemote(shopApi.wishlist, session?.user.id ?? 'guest', !!session)
+  const cart = useRemote(shopApi.cart, session?.user.id ?? 'guest', !!session)
+  const action = useAction()
+  const favorites = saved.data?.map((row) => row.product_id) ?? []
+  const bagCount = cart.data?.reduce((sum, item) => sum + item.quantity, 0) ?? 0
+  function toggleFavorite(id: string) {
+    if (!session) { navigate('/login'); return }
+    void action.run(() => favorites.includes(id) ? shopApi.unsaveProduct(id) : shopApi.saveProduct(id))
+  }
   const hasFilters =
     query !== '' ||
     category !== 'all' ||
     savedOnly ||
-    maxPrice < 550 ||
+    maxPrice < 100 ||
     filterSize !== 'all'
-  const visibleProducts = (allClothes ? products : bestSellers)
+  const visibleProducts = (allClothes ? products : products.slice(0, 4))
     .filter(
       (product) =>
         (category === 'all' || product.category === category) &&
         `${product.name} ${product.description}`
           .toLowerCase()
           .includes(query.trim().toLowerCase()) &&
-        (!savedOnly || shop.favorites.includes(product.id)) &&
-        product.price <= maxPrice &&
+        (!savedOnly || favorites.includes(product.id)) &&
+        (maxPrice === 100 || product.price <= maxPrice) &&
         (filterSize === 'all' || product.sizes.includes(filterSize)),
     )
     .sort((a, b) =>
@@ -92,13 +103,19 @@ export default function CataloguePage({
     setQuery('')
     setCategory('all')
     setSavedOnly(false)
-    setMaxPrice(550)
+    setMaxPrice(100)
     setFilterSize('all')
     setSort('editorial')
   }
-  function addProduct(product: Product, size: string) {
-    shop.addToBag(product.id, size)
-    setAnnouncement(`${product.name} · Size ${size} added to your demo bag.`)
+  async function addProduct(product: Product, size: string) {
+    if (!session) { navigate('/login'); return false }
+    const variant = product.variants?.find((entry) => entry.size === size && entry.is_active && entry.stock_quantity > 0)
+    const success = await action.run(async () => {
+      if (!variant) throw new Error('This size is sold out.')
+      await shopApi.addToCart(variant.variant_id)
+    })
+    if (success) setAnnouncement(`${product.name} / Size ${size} added to your bag.`)
+    return success
   }
 
   return (
@@ -121,8 +138,7 @@ export default function CataloguePage({
                 silhouettes
               </span>
               <span>
-                <Icon name="sparkles" size={13} /> Frontend preview · Sample
-                collection
+                <Icon name="sparkles" size={13} /> {catalogue.data?.mode === 'sample' ? 'Sample collection' : 'The StyleFit collection'}
               </span>
             </div>
           </div>
@@ -135,18 +151,18 @@ export default function CataloguePage({
                   <h1>All Clothes</h1>
                 </div>
                 <span className="clothes-edition">
-                  {products.length} pieces · Sample collection
+                  {products.length} pieces / {catalogue.data?.mode === 'sample' ? 'Sample collection' : 'The essentials edit'}
                 </span>
               </div>
             </div>
           ) : (
-            <CollectionHero />
+            <CollectionHero count={products.length} />
           )}
           {!allClothes && (
             <>
               <section
                 className="wardrobe-banner"
-                aria-label="Sample wardrobe pairing notes"
+                aria-label="Wardrobe styling notes"
               >
                 <div className="wardrobe-copy">
                   <span className="wardrobe-icon">
@@ -155,11 +171,10 @@ export default function CataloguePage({
                   <div>
                     <h2>
                       Style starts with what you love{' '}
-                      <span className="small-badge">Demo</span>
+                      <span className="small-badge">StyleFit</span>
                     </h2>
                     <p>
-                      Explore sample wardrobe pairings. Match scores are
-                      illustrative; your personal wardrobe isn’t connected.
+                      Bring your favorite pieces into the outfit studio for AI styling suggestions.
                     </p>
                   </div>
                 </div>
@@ -171,11 +186,12 @@ export default function CataloguePage({
                     onChange={(event) => setShowNotes(event.target.checked)}
                   />
                   <span className="switch-track" aria-hidden="true" />
-                  <span>Pairing notes: {showNotes ? 'On' : 'Off'}</span>
+                  <span>Styling notes: {showNotes ? 'On' : 'Off'}</span>
                 </label>
               </section>
             </>
           )}
+          <Notice {...catalogue} /><Notice {...action} /><Notice error={saved.error || cart.error} />
           <section
             id="collection"
             className={`collection-section${allClothes ? ' clothes-layout' : ''}`}
@@ -183,6 +199,7 @@ export default function CataloguePage({
           >
             {allClothes && (
               <CatalogueFilters
+                products={products}
                 category={category}
                 setCategory={setCategory}
                 maxPrice={maxPrice}
@@ -193,7 +210,7 @@ export default function CataloguePage({
                 setSavedOnly={setSavedOnly}
                 favoriteCount={
                   products.filter((product) =>
-                    shop.favorites.includes(product.id),
+                    favorites.includes(product.id),
                   ).length
                 }
                 resetFilters={resetFilters}
@@ -213,7 +230,7 @@ export default function CataloguePage({
                   <div>
                     <p className="overline">The essentials edit</p>
                     <h2>Best Sellers</h2>
-                    <p>Four standout pieces from our sample collection.</p>
+                    <p>Four standout pieces from our essentials collection.</p>
                   </div>
                   <Link
                     className="button button-surface"
@@ -245,9 +262,9 @@ export default function CataloguePage({
                     <ProductCard
                       key={product.id}
                       product={product}
-                      favorite={shop.favorites.includes(product.id)}
+                      favorite={favorites.includes(product.id)}
                       showNotes={showNotes}
-                      onFavorite={shop.toggleFavorite}
+                      onFavorite={toggleFavorite}
                       onAdd={addProduct}
                       onPreview={setPreview}
                     />
@@ -271,8 +288,7 @@ export default function CataloguePage({
               )}
               {!allClothes && (
                 <p className="best-sellers-note">
-                  Best-seller selection is curated for this preview; live sales
-                  rankings are not connected.
+                  A curated selection from the StyleFit collection.
                 </p>
               )}
             </div>
@@ -293,7 +309,7 @@ export default function CataloguePage({
             <button
               onClick={() => {
                 setAnnouncement('')
-                setBagOpen(true)
+                navigate('/cart')
               }}
             >
               View bag
@@ -308,12 +324,6 @@ export default function CataloguePage({
           </>
         )}
       </div>
-      {shop.storageError && (
-        <div className="storage-notice" role="alert">
-          Your browser couldn’t save these changes. They’ll last for this visit
-          only.
-        </div>
-      )}
       {preview && (
         <ProductPreview
           product={preview}
@@ -321,13 +331,7 @@ export default function CataloguePage({
           onAdd={addProduct}
         />
       )}
-      {bagOpen && (
-        <DemoBag
-          items={shop.bag}
-          onClose={() => setBagOpen(false)}
-          onQuantity={shop.setQuantity}
-        />
-      )}
+
     </div>
   )
 }

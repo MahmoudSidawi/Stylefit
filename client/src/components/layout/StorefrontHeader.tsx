@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
+import { useSession } from '../../features/auth/sessionContext'
 
 type Props = {
   query: string
@@ -18,6 +19,7 @@ export function StorefrontHeader({
   searchLabel = 'Search garments',
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { session } = useSession()
   return (
     <>
       <a className="skip-link" href={`#${contentId}`}>
@@ -55,9 +57,7 @@ export function StorefrontHeader({
             <NavLink to="/cart" onClick={() => setMenuOpen(false)}>
               Bag ({bagCount})
             </NavLink>
-            <span aria-disabled="true">
-              Admin Console <small>Soon</small>
-            </span>
+            <NavLink to="/admin/products" onClick={() => setMenuOpen(false)}>Admin</NavLink>
           </nav>
           <div className="header-tools">
             <label className="search-field">
@@ -65,18 +65,18 @@ export function StorefrontHeader({
               <span className="sr-only">{searchLabel}</span>
               <input
                 type="search"
-                placeholder="Search bespoke looks…"
+                placeholder="Search clothes…"
                 value={query}
                 onChange={(event) => onSearch(event.target.value)}
               />
             </label>
             <Link
               className="demo-avatar"
-              to="/login"
-              title="Sign in to StyleFit"
-              aria-label="Sign in to StyleFit"
+              to={session ? '/profile' : '/login'}
+              title={session ? 'Your account' : 'Sign in to StyleFit'}
+              aria-label={session ? 'Your account' : 'Sign in to StyleFit'}
             >
-              G
+              {session ? (session.user.email?.[0] ?? 'U').toUpperCase() : 'G'}
             </Link>
             <Link
               className="icon-button mobile-bag"

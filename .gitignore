@@ -19,10 +19,11 @@ __pycache__/
 .coverage
 htmlcov/
 coverage/
+test-results/
+playwright-report/
 # Editors, operating system, and logs
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 *.log
-

@@ -7,19 +7,28 @@ type Props = {
   favorite: boolean
   showNotes: boolean
   onFavorite: (id: string) => void
-  onAdd: (product: Product, size: string) => void
+  onAdd: (product: Product, size: string) => Promise<boolean>
   onPreview: (product: Product) => void
 }
 
 export function ProductCard({
-  product,
+  product: originalProduct,
   favorite,
   showNotes,
   onFavorite,
   onAdd,
   onPreview,
 }: Props) {
-  const [size, setSize] = useState(product.sizes[1] ?? product.sizes[0])
+  const [color, setColor] = useState(originalProduct.variants?.[0]?.color ?? '')
+  const colorVariants = originalProduct.variants?.filter((v) => v.color === color)
+  const sizes = colorVariants ? [...new Set(colorVariants.map((v) => v.size))] : originalProduct.sizes
+  const [chosenSize, setSize] = useState(sizes[1] ?? sizes[0])
+  const size = sizes.includes(chosenSize) ? chosenSize : sizes[0]
+  const selected = colorVariants?.find((v) => v.size === size)
+  const product = { ...originalProduct, sizes, variants: colorVariants, price: Number(selected?.price ?? originalProduct.price), image: selected?.image_url ?? originalProduct.image }
+  const soldOut = !size || (!!colorVariants && (!selected || selected.stock_quantity < 1))
+  const colors = [...new Set(originalProduct.variants?.map((v) => v.color) ?? [])]
+  const [adding, setAdding] = useState(false)
   return (
     <article className="product-card">
       <div className="product-image">
@@ -34,15 +43,7 @@ export function ProductCard({
             loading="lazy"
           />
         </button>
-        {showNotes && (
-          <span
-            className="match-badge"
-            title="Illustrative score from the supplied design, not an AI result"
-          >
-            <Icon name="sparkles" size={12} />
-            {product.match}% · Demo match
-          </span>
-        )}
+
         <button
           className={`favorite-button${favorite ? ' is-saved' : ''}`}
           aria-label={`${favorite ? 'Unsave' : 'Save'} ${product.name}`}
@@ -51,7 +52,7 @@ export function ProductCard({
         >
           <Icon name="heart" size={17} />
         </button>
-        {showNotes && <span className="pairing-note">{product.note}</span>}
+        {showNotes && product.note && <span className="pairing-note">{product.note}</span>}
       </div>
       <div className="product-meta">
         <div className="product-title">
@@ -62,6 +63,7 @@ export function ProductCard({
         </div>
         <p>{product.description}</p>
       </div>
+      {colors.length > 1 && <label className="product-color">Color<select aria-label={`Color for ${product.name}`} value={color} onChange={(event) => { setColor(event.target.value) }}>{colors.map((value) => <option key={value}>{value}</option>)}</select></label>}
       <fieldset className="size-selector">
         <legend className="sr-only">Size for {product.name}</legend>
         <span aria-hidden="true">Fit:</span>
@@ -87,9 +89,10 @@ export function ProductCard({
         </button>
         <button
           className="button button-primary"
-          onClick={() => onAdd(product, size)}
+          disabled={adding || soldOut}
+          onClick={async () => { setAdding(true); try { await onAdd(product, size) } finally { setAdding(false) } }}
         >
-          <Icon name="bag" size={15} /> Add to Bag
+          <Icon name="bag" size={15} /> {soldOut ? 'Sold out' : adding ? 'Adding...' : 'Add to Bag'}
         </button>
       </div>
     </article>

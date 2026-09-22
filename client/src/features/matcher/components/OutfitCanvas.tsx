@@ -3,6 +3,7 @@ import { slotLabels } from '../data/garments'
 import type { Garment } from '../types'
 
 type Props = {
+  busy?: boolean
   selected: { garment: Garment; size: string }[]
   name: string
   total: number
@@ -18,6 +19,7 @@ type Props = {
 }
 
 export function OutfitCanvas({
+  busy = false,
   selected,
   name,
   total,
@@ -42,10 +44,10 @@ export function OutfitCanvas({
           <div className="canvas-tools">
             <button
               className="button button-primary"
-              disabled={selected.length < 2}
+              disabled={busy || selected.length < 2}
               onClick={onCheck}
             >
-              <Icon name="sparkles" size={16} /> Check demo match
+              <Icon name="sparkles" size={16} /> {busy ? 'Checking...' : 'Check outfit with AI'}
             </button>
             <button
               className="icon-button"
@@ -118,11 +120,10 @@ export function OutfitCanvas({
             <Icon name="hanger" size={40} />
             <h3>Your next look starts here.</h3>
             <p>
-              Add pieces from the Source Archive, or start with our sample
-              ensemble.
+              Add two or three pieces from the Source Archive to compose your look.
             </p>
             <button className="button button-surface" onClick={onReset}>
-              Load sample look
+              Start fresh
             </button>
           </div>
         )}
@@ -147,7 +148,7 @@ export function OutfitCanvas({
             </button>
             <button
               className="button button-primary"
-              disabled={!storeCount}
+              disabled={busy || !storeCount}
               onClick={onAddBag}
             >
               <Icon name="bag" size={16} /> Add Look to Bag
@@ -155,7 +156,7 @@ export function OutfitCanvas({
           </div>
         </div>
         <p className="canvas-caption">
-          Demo prices in USD. Only store pieces are added to your bag.
+          Prices in USD. Only store pieces are added to your bag.
         </p>
       </div>
       <div className="tone-palette">
@@ -180,7 +181,7 @@ export function OutfitCanvas({
             : 'Build your own color story'}
         </p>
         <button onClick={onAccessories}>
-          Explore accessories <Icon name="arrow" size={16} />
+          Explore dresses <Icon name="arrow" size={16} />
         </button>
       </div>
     </section>

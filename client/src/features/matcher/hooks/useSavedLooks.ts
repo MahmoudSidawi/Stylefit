@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { getGarment } from '../data/garments'
 import type { SavedLook, Selection } from '../types'
 
-const key = 'stylefit:saved-looks:v1'
+const prefix = 'stylefit:account-looks:v2:'
 function isSelection(value: unknown): value is Selection {
   if (
     !value ||
@@ -13,7 +12,7 @@ function isSelection(value: unknown): value is Selection {
     typeof value.size !== 'string'
   )
     return false
-  return getGarment(value.garmentId)?.sizes.includes(value.size) ?? false
+  return value.garmentId.length > 0 && value.size.length > 0
 }
 function isLook(value: unknown): value is SavedLook {
   if (!value || typeof value !== 'object') return false
@@ -40,11 +39,11 @@ function isLook(value: unknown): value is SavedLook {
   )
     return false
   return (
-    new Set(value.selection.map((entry) => getGarment(entry.garmentId)?.slot))
+    new Set(value.selection.map((entry) => entry.garmentId))
       .size === value.selection.length
   )
 }
-function readLooks(): SavedLook[] {
+function readLooks(key: string): SavedLook[] {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(key) ?? '[]')
     return Array.isArray(value) ? value.filter(isLook).slice(0, 20) : []
@@ -52,8 +51,9 @@ function readLooks(): SavedLook[] {
     return []
   }
 }
-export function useSavedLooks() {
-  const [looks, setLooks] = useState(readLooks)
+export function useSavedLooks(accountId: string) {
+  const key = prefix + accountId
+  const [looks, setLooks] = useState(() => readLooks(key))
   const [storageError, setStorageError] = useState(false)
   function write(next: SavedLook[]) {
     setLooks(next)

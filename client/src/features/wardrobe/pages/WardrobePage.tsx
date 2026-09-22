@@ -3,7 +3,10 @@ import { StorefrontHeader } from '../../../components/layout/StorefrontHeader'
 import { StorefrontFooter } from '../../../components/layout/StorefrontFooter'
 import { Dialog } from '../../../components/ui/Dialog'
 import { Icon } from '../../../components/ui/Icon'
-import { useDemoShop } from '../../products/hooks/useDemoShop'
+import { shopApi, type GarmentAnalysis } from '../../../services/shopApi'
+import { useSession } from '../../auth/sessionContext'
+import { useRemote, useAction } from '../../live/hooks'
+import { AccountGate, Notice } from '../../live/shared'
 import { useWardrobe } from '../hooks/useWardrobe'
 import { WardrobeOverview } from '../components/WardrobeOverview'
 import { WardrobeCard } from '../components/WardrobeCard'
@@ -20,7 +23,10 @@ type WardrobeDialog =
 
 export default function WardrobePage() {
   const wardrobe = useWardrobe()
-  const shop = useDemoShop()
+  const { session } = useSession()
+  const cart = useRemote(shopApi.cart, session?.user.id ?? 'guest', !!session)
+  const ai = useAction()
+  const [suggestion, setSuggestion] = useState<{ item: WardrobeItem; analysis: GarmentAnalysis } | null>(null)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<WardrobeCategory>('all')
   const [dialog, setDialog] = useState<WardrobeDialog>(null)
@@ -48,15 +54,15 @@ export default function WardrobePage() {
     setDropError('')
     setDialog({ type: 'add' })
   }
-  function save(draft: WardrobeDraft, id?: string) {
-    const success = wardrobe.save(draft, id)
+  async function save(draft: WardrobeDraft, id?: string) {
+    const success = await wardrobe.save(draft, id)
     if (success) {
       setQuery('')
       setCategory('all')
       setMessage(
         id
           ? 'Garment details updated.'
-          : 'Your new piece is saved in this browser.',
+          : 'Your new piece is saved to your account.',
       )
     }
     return success
@@ -68,7 +74,7 @@ export default function WardrobePage() {
         onSearch={setQuery}
         contentId="wardrobe-content"
         searchLabel="Search your wardrobe"
-        bagCount={shop.bag.reduce((sum, item) => sum + item.quantity, 0)}
+        bagCount={cart.data?.reduce((sum, item) => sum + item.quantity, 0) ?? 0}
       />
       <main className="store-main" id="wardrobe-content" tabIndex={-1}>
         <div className="wardrobe-container">
@@ -85,15 +91,10 @@ export default function WardrobePage() {
               <button className="button button-primary" onClick={openAdd}>
                 <Icon name="plus" size={17} /> Add Clothes
               </button>
-              <button
-                className="button button-lavender"
-                disabled
-                title="Cloud sync and AI image recognition are not connected"
-              >
-                <Icon name="sparkles" size={17} /> AI Sync · Coming soon
-              </button>
+
             </div>
           </div>
+          <AccountGate><Notice loading={wardrobe.loading} /><Notice {...ai} />
           <WardrobeOverview
             items={wardrobe.items}
             onAdd={openAdd}
@@ -150,8 +151,7 @@ export default function WardrobePage() {
             </div>
             <p className="wardrobe-local-note">
               <Icon name="info" size={13} />{' '}
-              {wardrobe.items.filter((item) => item.sample).length} sample
-              pieces · Your additions are saved only in this browser.
+              Your photos are private. Requesting AI suggestions sends the selected photo to Groq.
             </p>
             {visible.length ? (
               <div className="wardrobe-grid">
@@ -159,6 +159,7 @@ export default function WardrobePage() {
                   <WardrobeCard
                     key={item.id}
                     item={item}
+                    onAnalyze={(item) => { void ai.run(async () => { setSuggestion({ item, analysis: await shopApi.analyzeGarment(item.id) }) }) }}
                     onEdit={(entry) => setDialog({ type: 'edit', item: entry })}
                     onRemove={(entry) =>
                       setDialog({ type: 'remove', item: entry })
@@ -196,7 +197,7 @@ export default function WardrobePage() {
                 </button>
               </div>
             )}
-          </section>
+          </section></AccountGate>
         </div>
       </main>
       <StorefrontFooter />
@@ -228,6 +229,17 @@ export default function WardrobePage() {
           storageError={wardrobe.error}
         />
       )}
+      {suggestion && <Dialog title="Suggested garment details" onClose={() => setSuggestion(null)}>
+        <p>{suggestion.analysis.description}</p><p>{suggestion.analysis.name} / {suggestion.analysis.clothing_type} / {suggestion.analysis.color}</p>
+        <p>Confidence: {suggestion.analysis.confidence}. Review these details before saving.</p><Notice {...ai} />
+        <button className="button button-primary" disabled={ai.busy || suggestion.analysis.confidence === 'low'} onClick={() => { void ai.run(async () => {
+          const { analysis, item } = suggestion
+          if (!item.record) return
+          const { wardrobe_item_id: _id, ...record } = item.record
+          await shopApi.updateGarment(item.id, { ...record, name: analysis.name, category_id: analysis.category_id, clothing_type: analysis.clothing_type, color: analysis.color, style: analysis.style, pattern: analysis.pattern })
+          setSuggestion(null)
+        }, 'Details saved.') }}>Use these details</button>
+      </Dialog>}
       {dialog?.type === 'remove' && (
         <Dialog title="Remove this piece?" onClose={() => setDialog(null)}>
           <div className="remove-garment-preview">
@@ -235,8 +247,7 @@ export default function WardrobePage() {
             <div>
               <h3>{dialog.item.name}</h3>
               <p>
-                This removes the item from this browser’s wardrobe. Saved looks
-                containing it will no longer be available.
+                This removes the garment and its private photo from your account.
               </p>
             </div>
           </div>
@@ -254,8 +265,9 @@ export default function WardrobePage() {
             </button>
             <button
               className="button button-primary"
-              onClick={() => {
-                if (wardrobe.remove(dialog.item.id)) {
+              disabled={wardrobe.busy}
+              onClick={async () => {
+                if (await wardrobe.remove(dialog.item.id)) {
                   setDialog(null)
                   setMessage('Piece removed from your wardrobe.')
                 }

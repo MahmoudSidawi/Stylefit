@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getSupabaseClient } from '../../../services/supabase'
 import { Icon } from '../../../components/ui/Icon'
 import { AuthField } from '../components/AuthField'
 import {
@@ -28,6 +29,9 @@ export default function AuthPage({
   const [values, setValues] = useState<AuthValues>(emptyValues)
   const [errors, setErrors] = useState<AuthErrors>({})
   const [reviewed, setReviewed] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [requestError, setRequestError] = useState('')
+  const [message, setMessage] = useState('')
   const resultRef = useRef<HTMLDivElement>(null)
   const register = mode === 'register'
   const reset = mode === 'reset'
@@ -49,13 +53,16 @@ export default function AuthPage({
     }))
   }
   function changeMode(next: AuthMode) {
+    setRequestError('')
     setMode(next)
     setValues(emptyValues)
     setErrors({})
     setReviewed(false)
   }
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
+  async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (busy) return
+    setRequestError('')
     const next = validateAuth(values, mode)
     setErrors(next)
     const first = Object.keys(next)[0]
@@ -63,8 +70,30 @@ export default function AuthPage({
       document.getElementById(`auth-${first}`)?.focus()
       return
     }
-    setValues(emptyValues)
-    setReviewed(true)
+    setBusy(true)
+    try {
+      const client = getSupabaseClient()
+      if (reset) {
+        const { error } = await client.auth.resetPasswordForEmail(values.email.trim(), { redirectTo: `${window.location.origin}/reset-password` })
+        if (error) throw error
+        setMessage('If an account exists for this email, a password reset link will arrive shortly.')
+      } else if (register) {
+        const { data, error } = await client.auth.signUp({ email: values.email.trim(), password: values.password,
+          options: { data: { name: values.name.trim() }, emailRedirectTo: `${window.location.origin}/profile` } })
+        if (error) throw error
+        setMessage(data.session ? 'Your account is ready. You are signed in.' : 'Check your email to confirm your account, then sign in.')
+      } else {
+        const { error } = await client.auth.signInWithPassword({ email: values.email.trim(), password: values.password })
+        if (error) throw error
+        setMessage('You are signed in to StyleFit.')
+      }
+      setValues(emptyValues)
+      setReviewed(true)
+    } catch (error) {
+      setRequestError(error instanceof Error ? error.message : 'Unable to connect. Please retry.')
+    } finally {
+      setBusy(false)
+    }
   }
   return (
     <div
@@ -167,17 +196,10 @@ export default function AuthPage({
                 role="status"
               >
                 <Icon name="check" size={26} />
-                <h2>Preview complete.</h2>
-                <p>
-                  {reset
-                    ? 'The email format is valid. Password recovery is not connected, so no email was sent.'
-                    : register
-                      ? 'Your form passed validation. Account creation is not connected yet, so no account was created.'
-                      : 'Your form passed validation. Authentication is not connected yet, so you have not been signed in.'}{' '}
-                  Your entries have been cleared.
-                </p>
-                <Link className="button button-primary" to="/catalogue">
-                  Explore as a guest <Icon name="arrow" size={16} />
+                <h2>{reset ? 'Check your inbox' : register ? 'Account registration' : 'Welcome back'}</h2>
+                <p>{message}</p>
+                <Link className="button button-primary" to={reset ? '/login' : '/profile'}>
+                  {reset ? 'Back to sign in' : 'Your account'} <Icon name="arrow" size={16} />
                 </Link>
                 <button
                   className="auth-text-button"
@@ -241,24 +263,16 @@ export default function AuthPage({
                     Forgot your password?
                   </button>
                 )}
-                <div className="auth-preview-note">
-                  <Icon name="info" size={16} />
-                  <p>
-                    Frontend preview ·{' '}
-                    {reset
-                      ? 'Recovery emails are not sent.'
-                      : 'Accounts are not connected yet.'}{' '}
-                    Use sample details; nothing is saved or sent.
-                  </p>
-                </div>
+                {requestError && <p role="alert" className="auth-preview-note">{requestError}</p>}
                 <button
                   className="button button-primary auth-submit"
+                  disabled={busy}
                   type="submit"
                 >
                   {register
                     ? 'Create account'
                     : reset
-                      ? 'Preview recovery'
+                      ? 'Send reset link'
                       : 'Sign in'}
                   <Icon name="arrow" size={18} />
                 </button>

@@ -2,7 +2,8 @@ import { sampleWardrobe } from './sampleWardrobe'
 import { isColor, isKind } from './options'
 import type { WardrobeItem, WardrobeDraft } from '../types'
 
-const storageKey = 'stylefit:wardrobe:v1'
+const storageKey = 'stylefit:wardrobe:v2'
+const legacyStorageKey = 'stylefit:wardrobe:v1'
 type Snapshot = { items: WardrobeItem[]; error: string }
 let snapshot: Snapshot | undefined
 const listeners = new Set<() => void>()
@@ -53,12 +54,17 @@ function isItem(value: unknown): value is WardrobeItem {
 
 function read(): Snapshot {
   try {
-    const raw = localStorage.getItem(storageKey)
+    const raw = localStorage.getItem(storageKey) ?? localStorage.getItem(legacyStorageKey)
     if (raw === null) return { items: sampleWardrobe, error: '' }
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) throw new Error('Invalid saved wardrobe')
     const ids = new Set<string>()
     const items = parsed
+      .map((item: unknown) => {
+        if (!item || typeof item !== 'object' || !('kind' in item)) return item
+        const legacy: Record<string, string> = { knitwear: 'hoodies', tailoring: 'pants', denim: 'jeans' }
+        return typeof item.kind === 'string' && legacy[item.kind] ? { ...item, kind: legacy[item.kind] } : item
+      })
       .filter(isItem)
       .filter((item) => {
         if (ids.has(item.id)) return false

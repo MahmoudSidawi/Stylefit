@@ -26,7 +26,6 @@ export function CatalogueSort({
         <option value="editorial">Editorial order</option>
         <option value="price-asc">Price: Low to High</option>
         <option value="price-desc">Price: High to Low</option>
-        <option value="match">Sample match score</option>
       </select>
     </label>
   )

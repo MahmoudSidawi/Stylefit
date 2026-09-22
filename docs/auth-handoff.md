@@ -1,3 +1,5 @@
+> Historical reference for the earlier project stage. See [backend.md](backend.md) for the current implementation and resolved database/authentication decisions.
+
 # Login and registration frontend
 
 Preview [Sign in](http://localhost:5173/login) and [Create account](http://localhost:5173/register). The storefront guest avatar links to Sign in. Start the site with `npm run dev --prefix client` from the repository root.

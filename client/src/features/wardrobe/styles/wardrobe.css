@@ -39,7 +39,7 @@
 }
 .wardrobe-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   background: #fed7aa;
   padding: 21px 24px;
   border-radius: 12px;

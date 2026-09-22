@@ -1,0 +1,1 @@
+export const clothingKinds = { 't-shirts': 'tops', shirts: 'tops', hoodies: 'tops', jeans: 'bottoms', pants: 'bottoms', shorts: 'bottoms', skirts: 'bottoms', dresses: 'dresses' } as const

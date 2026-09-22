@@ -1,0 +1,271 @@
+-- Supabase Auth owns credentials. public.users contains application profile data only.
+begin;
+
+create table public.users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  name text not null check (length(trim(name)) between 1 and 120),
+  email text not null,
+  role text not null default 'customer' check (role in ('customer', 'admin')),
+  height_cm numeric check (height_cm > 0 and height_cm <= 300),
+  weight_kg numeric check (weight_kg > 0 and weight_kg <= 700),
+  body_shape text, clothing_size text, skin_tone text,
+  created_at timestamptz not null default now()
+);
+create table public.categories (
+  category_id text primary key check (category_id in ('tops', 'bottoms', 'dresses')),
+  name text not null unique
+);
+insert into public.categories values ('tops', 'Tops'), ('bottoms', 'Bottoms'), ('dresses', 'Dresses');
+
+create table public.products (
+  product_id uuid primary key default gen_random_uuid(),
+  category_id text not null references public.categories,
+  name text not null check (length(trim(name)) between 1 and 120),
+  description text not null default '',
+  clothing_type text not null,
+  style text not null default 'casual', pattern text not null default 'solid',
+  is_active boolean not null default true,
+  check ((category_id = 'tops' and clothing_type in ('t-shirts', 'shirts', 'hoodies'))
+    or (category_id = 'bottoms' and clothing_type in ('jeans', 'pants', 'shorts', 'skirts'))
+    or (category_id = 'dresses' and clothing_type = 'dresses'))
+);
+create table public.product_variants (
+  variant_id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references public.products,
+  size text not null check (length(trim(size)) > 0),
+  color text not null check (length(trim(color)) > 0),
+  price numeric(10,2) not null check (price > 0),
+  stock_quantity integer not null default 0 check (stock_quantity >= 0),
+  image_url text not null,
+  is_active boolean not null default true,
+  unique (product_id, size, color)
+);
+create table public.wardrobe_items (
+  wardrobe_item_id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users on delete cascade,
+  category_id text not null references public.categories,
+  name text not null check (length(trim(name)) between 1 and 120),
+  image_url text not null check (image_url ~ ('^' || user_id::text || '/[^/]+$') and image_url not like '%..%'),
+  color text,
+  created_at timestamptz not null default now()
+);
+create table public.cart_items (
+  cart_item_id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users on delete cascade,
+  variant_id uuid not null references public.product_variants,
+  quantity integer not null check (quantity between 1 and 99),
+  unique (user_id, variant_id)
+);
+create table public.wishlist_items (
+  wishlist_item_id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users on delete cascade,
+  product_id uuid not null references public.products,
+  created_at timestamptz not null default now(),
+  unique (user_id, product_id)
+);
+create table public.orders (
+  order_id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users,
+  recipient_name text not null check (length(trim(recipient_name)) between 1 and 120),
+  phone text not null check (length(phone) between 7 and 30 and phone ~ '^\+?[0-9 ()-]+$'),
+  delivery_address text not null check (length(trim(delivery_address)) between 8 and 500),
+  total_amount numeric(12,2) not null check (total_amount > 0),
+  status text not null default 'placed' check (status in ('placed', 'shipped', 'delivered', 'cancelled')),
+  is_paid boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create table public.order_items (
+  order_item_id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders,
+  variant_id uuid not null references public.product_variants,
+  product_name text not null, size text not null, color text not null,
+  quantity integer not null check (quantity > 0),
+  unit_price numeric(10,2) not null check (unit_price > 0)
+);
+create index on public.products(category_id);
+create index on public.wardrobe_items(user_id);
+create index on public.orders(user_id);
+create index on public.order_items(order_id);
+create index on public.order_items(variant_id);
+
+create function public.sync_auth_user() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.users(user_id, name, email)
+  values (new.id, left(coalesce(nullif(trim(new.raw_user_meta_data->>'name'), ''), 'Customer'), 120), coalesce(new.email, ''))
+  on conflict (user_id) do update set email = excluded.email;
+  return new;
+end;
+$$;
+create trigger sync_stylefit_user after insert or update of email on auth.users
+for each row execute function public.sync_auth_user();
+insert into public.users(user_id, name, email)
+select id, left(coalesce(nullif(trim(raw_user_meta_data->>'name'), ''), 'Customer'), 120), coalesce(email, '') from auth.users
+on conflict do nothing;
+
+create function public.is_admin() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from public.users where user_id = auth.uid() and role = 'admin');
+$$;
+
+alter table public.users enable row level security;
+alter table public.categories enable row level security;
+alter table public.products enable row level security;
+alter table public.product_variants enable row level security;
+alter table public.wardrobe_items enable row level security;
+alter table public.cart_items enable row level security;
+alter table public.wishlist_items enable row level security;
+alter table public.orders enable row level security;
+alter table public.order_items enable row level security;
+
+-- Explicit grants prevent direct REST callers from escalating role or writing orders/stock.
+revoke all on public.users, public.categories, public.products, public.product_variants,
+  public.wardrobe_items, public.cart_items, public.wishlist_items, public.orders, public.order_items
+  from anon, authenticated;
+grant select on public.categories, public.products, public.product_variants to anon, authenticated;
+grant select on public.users, public.wardrobe_items, public.cart_items, public.wishlist_items,
+  public.orders, public.order_items to authenticated;
+grant update (name, height_cm, weight_kg, body_shape, clothing_size, skin_tone) on public.users to authenticated;
+grant insert, update, delete on public.wardrobe_items, public.wishlist_items to authenticated;
+grant update on public.products to authenticated;
+grant insert, update on public.product_variants to authenticated;
+
+create policy own_profile_read on public.users for select to authenticated using (user_id = auth.uid());
+create policy own_profile_update on public.users for update to authenticated
+using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy categories_read on public.categories for select to anon, authenticated using (true);
+create policy products_read on public.products for select to anon, authenticated using (is_active or public.is_admin());
+create policy products_admin on public.products for update to authenticated
+using (public.is_admin()) with check (public.is_admin());
+create policy variants_read on public.product_variants for select to anon, authenticated
+using (public.is_admin() or (is_active and exists (
+  select 1 from public.products p where p.product_id = product_variants.product_id and p.is_active)));
+create policy variants_admin_insert on public.product_variants for insert to authenticated with check (public.is_admin());
+create policy variants_admin_update on public.product_variants for update to authenticated
+using (public.is_admin()) with check (public.is_admin());
+create policy own_wardrobe on public.wardrobe_items for all to authenticated
+using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy own_cart_read on public.cart_items for select to authenticated using (user_id = auth.uid());
+create policy own_wishlist on public.wishlist_items for all to authenticated
+using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy orders_read on public.orders for select to authenticated using (user_id = auth.uid() or public.is_admin());
+create policy order_items_read on public.order_items for select to authenticated
+using (exists (select 1 from public.orders o where o.order_id = order_items.order_id and (o.user_id = auth.uid() or public.is_admin())));
+
+-- Cart mutation and checkout serialize per user. Inventory locks are ordered by UUID
+-- across users to avoid deadlocks. A cleared cart makes double submissions harmless.
+create function public.set_cart_item(p_variant_id uuid, p_quantity integer) returns void
+language plpgsql security definer set search_path = '' as $$
+declare v_stock integer;
+begin
+  if auth.uid() is null then raise exception 'Sign in to continue.'; end if;
+  perform 1 from public.users where user_id = auth.uid() for update;
+  if p_quantity is null or p_quantity < 0 or p_quantity > 99 then raise exception 'Quantity must be between 0 and 99.'; end if;
+  if p_quantity = 0 then
+    delete from public.cart_items where user_id = auth.uid() and variant_id = p_variant_id;
+    return;
+  end if;
+  select v.stock_quantity into v_stock from public.product_variants v
+  join public.products p using (product_id)
+  where v.variant_id = p_variant_id and v.is_active and p.is_active;
+  if v_stock is null or v_stock < p_quantity then raise exception 'This size or color is unavailable in the requested quantity.'; end if;
+  insert into public.cart_items(user_id, variant_id, quantity) values (auth.uid(), p_variant_id, p_quantity)
+  on conflict (user_id, variant_id) do update set quantity = excluded.quantity;
+end;
+$$;
+
+create function public.place_order(p_recipient_name text, p_phone text, p_delivery_address text)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare v_order uuid; v_total numeric(12,2); v_item record;
+begin
+  if auth.uid() is null then raise exception 'Sign in to continue.'; end if;
+  perform 1 from public.users where user_id = auth.uid() for update;
+  if not exists (select 1 from public.cart_items where user_id = auth.uid()) then raise exception 'Your cart is empty.'; end if;
+  -- Freeze the product names/active flags as well as variant price and inventory.
+  perform p.product_id from public.products p
+  where p.product_id in (select v.product_id from public.product_variants v join public.cart_items c using (variant_id) where c.user_id = auth.uid())
+  order by p.product_id for share;
+  perform v.variant_id from public.product_variants v join public.cart_items c using (variant_id)
+  where c.user_id = auth.uid() order by v.variant_id for update of v;
+  for v_item in select c.quantity, v.stock_quantity, v.is_active as variant_active, p.is_active as product_active
+    from public.cart_items c join public.product_variants v using (variant_id) join public.products p using (product_id)
+    where c.user_id = auth.uid()
+  loop
+    if not v_item.variant_active or not v_item.product_active or v_item.quantity > v_item.stock_quantity
+    then raise exception 'An item is unavailable or has insufficient stock. Review your cart.'; end if;
+  end loop;
+  select sum(c.quantity * v.price) into v_total from public.cart_items c join public.product_variants v using (variant_id)
+  where c.user_id = auth.uid();
+  insert into public.orders(user_id, recipient_name, phone, delivery_address, total_amount)
+  values (auth.uid(), trim(p_recipient_name), trim(p_phone), trim(p_delivery_address), v_total) returning order_id into v_order;
+  insert into public.order_items(order_id, variant_id, product_name, size, color, quantity, unit_price)
+  select v_order, v.variant_id, p.name, v.size, v.color, c.quantity, v.price
+  from public.cart_items c join public.product_variants v using (variant_id) join public.products p using (product_id)
+  where c.user_id = auth.uid();
+  update public.product_variants v set stock_quantity = v.stock_quantity - c.quantity
+  from public.cart_items c where c.variant_id = v.variant_id and c.user_id = auth.uid();
+  delete from public.cart_items where user_id = auth.uid();
+  return v_order;
+end;
+$$;
+
+create function public.update_order_status(p_order_id uuid, p_status text, p_is_paid boolean) returns void
+language plpgsql security definer set search_path = '' as $$
+declare v_status text;
+begin
+  if not public.is_admin() then raise exception 'Administrator access required.'; end if;
+  if p_status is null or p_status not in ('placed', 'shipped', 'delivered', 'cancelled') or p_is_paid is null then raise exception 'Invalid order status.'; end if;
+  select status into v_status from public.orders where order_id = p_order_id for update;
+  if v_status is null then raise exception 'Order not found.'; end if;
+  if p_status <> v_status and not ((v_status = 'placed' and p_status in ('shipped', 'cancelled'))
+     or (v_status = 'shipped' and p_status = 'delivered')) then raise exception 'This status transition is not allowed.'; end if;
+  if p_status = 'cancelled' and p_is_paid then raise exception 'A cancelled cash-on-delivery order cannot be paid.'; end if;
+  if p_status = 'cancelled' and v_status = 'placed' then
+    perform v.variant_id from public.product_variants v join public.order_items i using (variant_id)
+    where i.order_id = p_order_id order by v.variant_id for update of v;
+    update public.product_variants v set stock_quantity = v.stock_quantity + i.quantity
+    from public.order_items i where i.variant_id = v.variant_id and i.order_id = p_order_id;
+  end if;
+  update public.orders set status = p_status, is_paid = p_is_paid where order_id = p_order_id;
+end;
+$$;
+
+create function public.create_product(p_product jsonb, p_variants jsonb) returns uuid
+language plpgsql security definer set search_path = '' as $$
+declare v_id uuid;
+begin
+  if not public.is_admin() then raise exception 'Administrator access required.'; end if;
+  if p_variants is null or jsonb_typeof(p_variants) <> 'array' then raise exception 'Provide at least one variant.'; end if;
+  if jsonb_array_length(p_variants) not between 1 and 100 then raise exception 'Provide between 1 and 100 variants.'; end if;
+  insert into public.products(category_id, name, description, clothing_type, style, pattern, is_active)
+  values (p_product->>'category_id', p_product->>'name', coalesce(p_product->>'description', ''),
+    p_product->>'clothing_type', coalesce(p_product->>'style', 'casual'), coalesce(p_product->>'pattern', 'solid'),
+    coalesce((p_product->>'is_active')::boolean, true)) returning product_id into v_id;
+  insert into public.product_variants(product_id, size, color, price, stock_quantity, image_url, is_active)
+  select v_id, x.size, x.color, x.price, x.stock_quantity, x.image_url, coalesce(x.is_active, true)
+  from jsonb_to_recordset(p_variants) as x(size text, color text, price numeric, stock_quantity integer, image_url text, is_active boolean);
+  return v_id;
+end;
+$$;
+
+revoke all on function public.sync_auth_user() from public;
+revoke all on function public.is_admin() from public;
+revoke all on function public.set_cart_item(uuid, integer) from public;
+revoke all on function public.place_order(text, text, text) from public;
+revoke all on function public.update_order_status(uuid, text, boolean) from public;
+revoke all on function public.create_product(jsonb, jsonb) from public;
+grant execute on function public.is_admin() to anon, authenticated;
+grant execute on function public.set_cart_item(uuid, integer), public.place_order(text, text, text),
+  public.update_order_status(uuid, text, boolean), public.create_product(jsonb, jsonb) to authenticated;
+
+insert into storage.buckets(id, name, public, file_size_limit, allowed_mime_types)
+values ('wardrobe', 'wardrobe', false, 5242880, array['image/jpeg', 'image/png'])
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+create policy wardrobe_images_read on storage.objects for select to authenticated
+using (bucket_id = 'wardrobe' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy wardrobe_images_upload on storage.objects for insert to authenticated
+with check (bucket_id = 'wardrobe' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy wardrobe_images_delete on storage.objects for delete to authenticated
+using (bucket_id = 'wardrobe' and (storage.foldername(name))[1] = auth.uid()::text);
+
+commit;

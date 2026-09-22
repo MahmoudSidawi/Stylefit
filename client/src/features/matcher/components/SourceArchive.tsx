@@ -1,12 +1,10 @@
 import { useRef } from 'react'
 import { Icon } from '../../../components/ui/Icon'
-import { garments as sampleGarments } from '../data/garments'
-import { useWardrobe } from '../../wardrobe/hooks/useWardrobe'
-import { wardrobeToGarment } from '../data/wardrobeAdapter'
 import type { ArchiveSource, Garment, Selection, Slot } from '../types'
 
 export type ArchiveFilter = 'all' | Slot
 type Props = {
+  garments: Garment[]
   source: ArchiveSource
   setSource: (source: ArchiveSource) => void
   filter: ArchiveFilter
@@ -19,13 +17,12 @@ type Props = {
 const filters: { id: ArchiveFilter; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'core', label: 'Tops' },
-  { id: 'layer', label: 'Outerwear' },
-  { id: 'anchor', label: 'Trousers' },
-  { id: 'footwear', label: 'Shoes' },
-  { id: 'accessory', label: 'Accessories' },
+  { id: 'anchor', label: 'Bottoms' },
+  { id: 'dress', label: 'Dresses' },
 ]
 
 export function SourceArchive({
+  garments,
   source,
   setSource,
   filter,
@@ -35,11 +32,6 @@ export function SourceArchive({
   selection,
   onStage,
 }: Props) {
-  const wardrobe = useWardrobe()
-  const garments = [
-    ...sampleGarments.filter((item) => item.source === 'store'),
-    ...wardrobe.items.map(wardrobeToGarment),
-  ]
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const visible = garments.filter(
     (item) =>
@@ -174,13 +166,12 @@ export function SourceArchive({
         )}
       </div>
       <p className="archive-help">
-        <Icon name="info" size={13} /> One piece per outfit slot. Adding another
-        layer replaces the current one.
+        <Icon name="info" size={13} /> One piece per category. Adding another
+        piece in the same category replaces the current one.
       </p>
       {source === 'wardrobe' && (
         <p className="archive-demo-note">
-          Your browser wardrobe appears here. Example garments are labeled
-          Sample; your own pieces are labeled Owned.
+          Your private wardrobe appears here. Selected photos are sent to Groq when you request an AI match.
         </p>
       )}
     </aside>

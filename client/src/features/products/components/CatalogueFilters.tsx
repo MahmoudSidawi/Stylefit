@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Icon } from '../../../components/ui/Icon'
-import { categories, products } from '../data/mockCatalogue'
-import type { Category } from '../types'
+import { categories } from '../data/mockCatalogue'
+import type { Category, Product } from '../types'
 
 type Props = {
+  products: Product[]
   category: Category
   setCategory: (category: Category) => void
   maxPrice: number
@@ -17,6 +18,7 @@ type Props = {
 }
 
 export function CatalogueFilters({
+  products,
   category,
   setCategory,
   maxPrice,
@@ -59,6 +61,7 @@ export function CatalogueFilters({
             <label
               className={`clothes-category${category === item.id ? ' selected' : ''}`}
               key={item.id}
+              title={item.description}
             >
               <input
                 type="radio"
@@ -87,15 +90,15 @@ export function CatalogueFilters({
           <input
             id="clothes-price"
             type="range"
-            min="150"
-            max="550"
+            min="0"
+            max="100"
             step="10"
             value={maxPrice}
             onChange={(event) => setMaxPrice(Number(event.target.value))}
           />
           <div className="clothes-price-limits">
-            <span>$150</span>
-            <span>$550</span>
+            <span>$0</span>
+            <span>$100</span>
           </div>
         </fieldset>
         <fieldset className="clothes-filter-group">

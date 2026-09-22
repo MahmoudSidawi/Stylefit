@@ -1898,3 +1898,6 @@ html {
     transition: none !important;
   }
 }
+
+.product-color { display: flex; gap: 12px; align-items: center; margin: 10px 0; }
+.product-color select { max-width: 100%; padding: 6px; font: inherit; border: 1px solid var(--sf-border); border-radius: 4px; background: var(--sf-background); }

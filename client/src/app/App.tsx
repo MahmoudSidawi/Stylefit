@@ -1,59 +1,45 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import MainLayout from '../layouts/MainLayout'
-import PlaceholderPage from '../components/PlaceholderPage'
 import CataloguePage from '../features/products/pages/CataloguePage'
-import AuthPage from '../features/auth/pages/AuthPage'
-import ProductDetails from '../pages/ProductDetails'
-import WardrobePage from '../features/wardrobe/pages/WardrobePage'
-import MatcherPage from '../features/matcher/pages/MatcherPage'
 import CartPage from '../features/cart/pages/CartPage'
-import Wishlist from '../pages/Wishlist'
 import CheckoutPage from '../features/checkout/pages/CheckoutPage'
-import Orders from '../pages/Orders'
+import PlaceholderPage from '../components/PlaceholderPage'
+import AuthPage from '../features/auth/pages/AuthPage'
+import { SessionProvider } from '../features/auth/SessionProvider'
+import ResetPasswordPage from '../features/auth/pages/ResetPasswordPage'
+import { LiveProduct, LiveWishlist, LiveOrders } from '../features/live/ShoppingPages'
+const LiveWardrobe = lazy(() => import('../features/wardrobe/pages/WardrobePage'))
+const LiveMatcher = lazy(() => import('../features/matcher/pages/MatcherPage'))
+const LiveAdminProducts = lazy(() => import('../features/live/AdminPages').then((module) => ({ default: module.LiveAdminProducts })))
+const LiveAdminOrders = lazy(() => import('../features/live/AdminPages').then((module) => ({ default: module.LiveAdminOrders })))
+import { LiveLayout } from '../features/live/shared'
 import Profile from '../pages/Profile'
-import AdminProducts from '../pages/admin/AdminProducts'
-import AdminOrders from '../pages/admin/AdminOrders'
+import { useSession } from '../features/auth/sessionContext'
 
 export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/catalogue" element={<CataloguePage key="storefront" />} />
-        <Route
-          path="/clothes"
-          element={<CataloguePage key="all-clothes" allClothes />}
-        />
-        <Route path="/matcher" element={<MatcherPage />} />
-        <Route path="/wardrobe" element={<WardrobePage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-        <Route
-          path="/login"
-          element={<AuthPage key="login" initialMode="login" />}
-        />
-        <Route
-          path="/register"
-          element={<AuthPage key="register" initialMode="register" />}
-        />
-        <Route element={<MainLayout />}>
-          <Route index element={<Navigate to="/catalogue" replace />} />
-          <Route path="/products/:productId" element={<ProductDetails />} />
-          <Route path="/wishlist" element={<Wishlist />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/admin/products" element={<AdminProducts />} />
-          <Route path="/admin/orders" element={<AdminOrders />} />
-          <Route
-            path="*"
-            element={
-              <PlaceholderPage
-                title="Page not found"
-                description="Use the navigation to return to a StyleFit page."
-              />
-            }
-          />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  )
+  return <SessionProvider><BrowserRouter><RoutedPages /></BrowserRouter></SessionProvider>
+}
+
+function RoutedPages() {
+  const { session } = useSession()
+  const accountKey = session?.user.id ?? 'guest'
+  return <Suspense fallback={<p role="status">Loading page...</p>}><Routes>
+    <Route index element={<Navigate to="/catalogue" replace />} />
+    <Route path="/catalogue" element={<CataloguePage />} />
+    <Route path="/clothes" element={<CataloguePage allClothes />} />
+    <Route path="/products/:productId" element={<LiveProduct />} />
+    <Route path="/cart" element={<CartPage key={accountKey} />} />
+    <Route path="/checkout" element={<CheckoutPage key={accountKey} />} />
+    <Route path="/wishlist" element={<LiveWishlist key={accountKey} />} />
+    <Route path="/orders" element={<LiveOrders key={accountKey} />} />
+    <Route path="/wardrobe" element={<LiveWardrobe key={accountKey} />} />
+    <Route path="/matcher" element={<LiveMatcher key={accountKey} />} />
+    <Route path="/admin/products" element={<LiveAdminProducts key={accountKey} />} />
+    <Route path="/admin/orders" element={<LiveAdminOrders key={accountKey} />} />
+    <Route path="/profile" element={<LiveLayout title="Your Account" privatePage><Profile key={accountKey} /></LiveLayout>} />
+    <Route path="/login" element={<AuthPage key="login" initialMode="login" />} />
+    <Route path="/register" element={<AuthPage key="register" initialMode="register" />} />
+    <Route path="/reset-password" element={<ResetPasswordPage />} />
+    <Route path="*" element={<PlaceholderPage title="Page not found" description="Return to the clothes catalogue to continue shopping." />} />
+  </Routes></Suspense>
 }
