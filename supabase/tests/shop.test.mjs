@@ -37,7 +37,7 @@ before(async () => {
     grant usage on schema storage to authenticated;
     grant select, insert, delete on storage.objects to authenticated;
   `)
-  for (const migration of ['202609210001_shop.sql', '202609210002_sample_catalogue.sql', '202609210003_backend_completion.sql', '202609210004_expanded_catalogue.sql', '202609210005_catalogue_search.sql']) {
+  for (const migration of ['202609210001_shop.sql', '202609210002_sample_catalogue.sql', '202609210003_backend_completion.sql', '202609210004_expanded_catalogue.sql', '202609210005_catalogue_search.sql', '202609220001_admin_accounts.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${migration}`, import.meta.url), 'utf8'))
   }
   for (const id of [alice, bob, admin]) {
@@ -198,4 +198,30 @@ test('category editing and public product image uploads require admin', async ()
   await identity(admin)
   await db.query("insert into storage.objects(bucket_id,name) values ('products','test.jpg')")
   assert.equal((await db.query("update public.categories set name = 'Tops' where category_id = 'tops' returning *")).rows.length, 1)
+})
+
+
+test('admin can list and edit customer names but cannot grant roles through the client', async () => {
+  await identity(admin)
+  assert.equal(await scalar('select count(*)::int from public.users'), 3)
+  await db.query("update public.users set name = 'Updated Customer' where user_id = $1", [bob])
+  await assert.rejects(db.query("update public.users set role = 'admin' where user_id = $1", [bob]), /permission denied/)
+  await identity(bob)
+  assert.equal(await scalar('select name from public.users'), 'Updated Customer')
+  assert.equal(await scalar('select count(*)::int from public.users'), 1)
+})
+
+test('cash-on-delivery starts unpaid and only admin can record collection', async () => {
+  await identity(admin)
+  await db.query('update public.product_variants set stock_quantity = 10, is_active = true where variant_id = $1', [variant])
+  await identity(alice)
+  await db.query('select public.set_cart_item($1, 1)', [variant])
+  const placed = await scalar('select public.place_order($1,$2,$3)', ['Customer', '1234567', 'Example Street 123'])
+  assert.equal(await scalar('select is_paid from public.orders where order_id = $1', [placed]), false)
+  await assert.rejects(db.query("select public.update_order_status($1, 'placed', true)", [placed]), /Administrator/)
+  await identity(admin)
+  await db.query("select public.update_order_status($1, 'shipped', false)", [placed])
+  await db.query("select public.update_order_status($1, 'delivered', true)", [placed])
+  await identity(alice)
+  assert.equal(await scalar('select is_paid from public.orders where order_id = $1', [placed]), true)
 })

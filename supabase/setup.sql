@@ -424,3 +424,9 @@ revoke all on function public.browse_products(text,text,text,text,numeric,numeri
 grant execute on function public.browse_products(text,text,text,text,numeric,numeric,text,integer,integer) to anon, authenticated;
 
 commit;
+
+-- Admins can view accounts and edit profile fields; role and credentials remain protected.
+create policy admin_profiles_read on public.users for select to authenticated
+using (public.is_admin());
+create policy admin_profiles_update on public.users for update to authenticated
+using (public.is_admin()) with check (public.is_admin());

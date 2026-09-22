@@ -95,7 +95,8 @@ test('AI selection sends only IDs and clears stale analysis when changed', async
   await page.getByRole('combobox', { name: 'Outfit occasion', exact: true }).selectOption('work')
   await expect(page.locator('.harmony-gauge strong')).not.toHaveText('86%')
   await page.goto('/admin/products')
-  await expect(page.getByText('Administrator access is required.', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(/\/admin\/login$/)
+  await expect(page.getByRole('heading', { name: 'Admin sign in' })).toBeVisible()
 })
 
 
@@ -160,4 +161,241 @@ test('restored wardrobe uploads a photo and applies reviewed AI tags through the
   await expect(page.getByRole('heading', { name: 'Soft Cotton Tee', exact: true })).toBeVisible()
   expect(applied).toMatchObject({ name: 'Soft Cotton Tee', image_url: userId + '/photo.png', category_id: 'tops' })
   expect(applied).not.toHaveProperty('wardrobe_item_id')
+})
+
+
+test('customer profile saves details', async ({ page }) => {
+  const calls = await setup(page)
+  await page.goto('/profile')
+  await page.getByLabel('Your name', { exact: true }).fill('Updated Customer')
+  await page.getByRole('button', { name: 'Save profile', exact: true }).click()
+  await expect(page.getByText('Your profile has been saved.')).toBeVisible()
+  expect(calls.find((call) => call.path === '/api/me' && call.body)?.body?.name).toBe('Updated Customer')
+})
+
+test('customer signup without a session returns home with confirmation notice', async ({ page }) => {
+  await setup(page, false)
+  await page.route('**/auth/v1/signup**', (route) => route.fulfill({ json: { user: { id: userId }, session: null } }))
+  await page.goto('/register')
+  await page.getByLabel('Full name', { exact: true }).fill('Test Customer')
+  await page.getByLabel('Email address', { exact: true }).fill('test@example.test')
+  await page.getByLabel('Password', { exact: true }).fill('Password123!')
+  await page.getByLabel('Confirm password', { exact: true }).fill('Password123!')
+  await page.getByRole('button', { name: 'Create account', exact: true }).click()
+  await expect(page).toHaveURL(/\/catalogue$/)
+  await expect(page.getByText('Check your email to confirm your account before signing in.')).toBeVisible()
+})
+
+
+async function mockLogin(page: Page) {
+  await page.route('**/auth/v1/token**', (route) => {
+    const expires = Math.floor(Date.now() / 1000) + 3600
+    const token = [btoa(JSON.stringify({ alg: 'HS256' })), btoa(JSON.stringify({ sub: userId, exp: expires })), 'signature'].join('.')
+    return route.fulfill({ json: { access_token: token, refresh_token: 'refresh', expires_in: 3600, token_type: 'bearer', user: { id: userId, email: 'test@example.test' } } })
+  })
+}
+
+test('successful customer login opens home', async ({ page }) => {
+  await setup(page, false)
+  await mockLogin(page)
+  await page.goto('/login')
+  await page.getByLabel('Email address', { exact: true }).fill('test@example.test')
+  await page.getByLabel('Password', { exact: true }).fill('Password123!')
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page).toHaveURL(/\/catalogue$/)
+})
+
+test('admin signs in separately and manages user names', async ({ page }) => {
+  await setup(page, false)
+  await mockLogin(page)
+  let updated = false
+  await page.route('**/api/admin/**', (route) => {
+    const path = new URL(route.request().url()).pathname
+    if (path.endsWith('/me')) return route.fulfill({ json: { user_id: userId, role: 'admin' } })
+    if (path.endsWith('/products')) return route.fulfill({ json: products })
+    if (path.endsWith('/users')) return route.fulfill({ json: [{ user_id: userId, name: updated ? 'New Name' : 'Customer', email: 'customer@example.test', role: 'customer' }] })
+    if (route.request().method() === 'PATCH') { updated = route.request().postDataJSON().name === 'New Name'; return route.fulfill({ json: {} }) }
+    return route.fulfill({ status: 404 })
+  })
+  await page.goto('/admin/login')
+  await page.getByLabel('Admin email').fill('admin@example.test')
+  await page.getByLabel('Admin password').fill('Password123!')
+  await page.getByRole('button', { name: 'Sign in as admin' }).click()
+  await expect(page.getByRole('heading', { name: 'Manage Products' })).toBeVisible()
+  expect(await page.evaluate(() => localStorage.getItem('sb-stylefit-test-auth-token'))).toBeNull()
+  await page.getByRole('link', { name: 'Users', exact: true }).click()
+  await page.getByRole('button', { name: 'Edit Customer', exact: true }).click()
+  await page.getByLabel('Full name').fill('New Name')
+  await page.getByRole('button', { name: 'Save name' }).click()
+  await expect(page.getByText('Customer name saved.')).toBeVisible()
+  expect(updated).toBe(true)
+})
+
+
+test('fitting workspace aligns panels and switches mobile results', async ({ page }) => {
+  await setup(page)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('/matcher')
+  await page.getByRole('button', { name: 'Add Cotton T-shirt to canvas', exact: true }).click()
+  await page.getByRole('button', { name: 'Add Straight Jeans to canvas', exact: true }).click()
+  await expect(page.locator('[data-garment-slot]')).toHaveCount(2)
+  const tops = await page.locator('.source-archive, .canvas-column, .insights-column').evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().top))
+  expect(Math.max(...tops) - Math.min(...tops)).toBeLessThan(2)
+  await page.getByRole('button', { name: 'Check outfit with AI', exact: true }).click()
+  await expect(page.locator('.harmony-gauge strong')).toHaveText('86%')
+  await page.screenshot({ path: '../docs/previews/fitting-workspace-desktop.png', fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.locator('.source-archive')).toBeHidden()
+  await expect(page.locator('.insights-column')).toBeVisible()
+  await page.getByRole('button', { name: 'Choose clothes', exact: true }).click()
+  await expect(page.locator('.source-archive')).toBeVisible()
+  await expect(page.locator('.insights-column')).toBeHidden()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({ path: '../docs/previews/fitting-workspace-mobile.png', fullPage: true })
+})
+
+
+test('profile layout stays usable on desktop and mobile', async ({ page }) => {
+  await setup(page)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('/profile')
+  await expect(page.getByRole('heading', { name: 'Your style & fit' })).toBeVisible()
+  await expect(page.getByLabel('Email address')).toHaveAttribute('readonly', '')
+  await page.screenshot({ path: '../docs/previews/profile-desktop.png', fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.getByLabel('Your name', { exact: true }).fill('New Customer')
+  await page.getByRole('button', { name: 'Save profile', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'New Customer', exact: true })).toBeVisible()
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  await page.screenshot({ path: '../docs/previews/profile-mobile.png', fullPage: true })
+})
+
+
+test('admin tables support product edits, creation and responsive navigation', async ({ page }) => {
+  await setup(page, false)
+  await mockLogin(page)
+  let catalogue = structuredClone(products)
+  let variantSaved = false
+  await page.route('**/api/admin/**', (route) => {
+    const path = new URL(route.request().url()).pathname
+    const method = route.request().method()
+    if (path.endsWith('/me')) return route.fulfill({ json: { user_id: userId, name: 'Store Administrator', role: 'admin' } })
+    if (path === '/api/admin/products' && method === 'GET') return route.fulfill({ json: catalogue })
+    if (path === '/api/admin/products' && method === 'POST') {
+      const body = route.request().postDataJSON()
+      catalogue.push({ ...body, product_id: 'new-product', product_variants: body.variants.map((v: object) => ({ ...v, variant_id: 'new-variant' })) })
+      return route.fulfill({ json: 'new-product' })
+    }
+    if (path.startsWith('/api/admin/products/') && method === 'PUT') {
+      catalogue = catalogue.map((product) => path.endsWith(product.product_id) ? { ...product, ...route.request().postDataJSON() } : product)
+      return route.fulfill({ json: {} })
+    }
+    if (path.startsWith('/api/admin/variants/') && method === 'PUT') { variantSaved = route.request().postDataJSON().stock_quantity === 15; return route.fulfill({ json: {} }) }
+    if (path.endsWith('/users')) return route.fulfill({ json: [{ user_id: userId, name: 'Test Customer', email: 'customer@example.test', role: 'customer' }, { user_id: 'admin-id', name: 'Store Administrator', email: 'admin@example.test', role: 'admin' }] })
+    if (path.endsWith('/orders')) return route.fulfill({ json: [] })
+    return route.fulfill({ status: 404 })
+  })
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('/admin/login')
+  await page.getByLabel('Admin email').fill('admin@example.test')
+  await page.getByLabel('Admin password').fill('Password123!')
+  await page.getByRole('button', { name: 'Sign in as admin' }).click()
+  await expect(page.getByRole('table')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Products', exact: true })).toHaveAttribute('aria-current', 'page')
+  await page.getByRole('button', { name: 'Edit Cotton T-shirt', exact: true }).click()
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill('Updated Cotton Tee')
+  await page.getByRole('button', { name: 'Save product', exact: true }).click()
+  await expect(page.getByText('Product saved.', { exact: true })).toBeVisible()
+  await page.getByLabel('Stock', { exact: true }).fill('15')
+  await page.getByRole('button', { name: 'Save variant', exact: true }).click()
+  await expect(page.getByText('Variant saved.', { exact: true })).toBeVisible()
+  expect(variantSaved).toBe(true)
+  await page.getByRole('button', { name: 'Close dialog' }).click()
+  await expect(page.getByRole('cell', { name: 'Updated Cotton Tee 1 variants' })).toBeVisible()
+  await page.getByRole('button', { name: 'Add product', exact: true }).click()
+  await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill('New Cotton Shirt')
+  await page.getByRole('dialog').getByLabel('Description', { exact: true }).fill('An everyday shirt')
+  await page.getByRole('button', { name: 'Create product', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByLabel('Search products').fill('New Cotton')
+  await expect(page.getByRole('table').getByRole('row')).toHaveCount(2)
+  await page.getByLabel('Search products').fill('')
+  await page.screenshot({ path: '../docs/previews/admin-products-desktop.png', fullPage: true })
+  await page.getByRole('link', { name: 'Users', exact: true }).click()
+  await expect(page.getByRole('table').getByRole('row')).toHaveCount(3)
+  await page.screenshot({ path: '../docs/previews/admin-users-desktop.png', fullPage: true })
+  await page.getByLabel('Filter account role').selectOption('customer')
+  await expect(page.getByRole('table').getByRole('row')).toHaveCount(2)
+  await page.setViewportSize({ width: 390, height: 844 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({ path: '../docs/previews/admin-users-mobile.png', fullPage: true })
+})
+
+test('profile and orders share the account sidebar and page style', async ({ page }) => {
+  await setup(page)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('/profile')
+  const before = await page.locator('.profile-sidebar').boundingBox()
+  await page.getByRole('navigation', { name: 'Account navigation' }).getByRole('link', { name: 'My orders' }).click()
+  await expect(page.getByRole('heading', { name: 'My orders', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'My orders', exact: true })).toHaveAttribute('aria-current', 'page')
+  const after = await page.locator('.profile-sidebar').boundingBox()
+  expect(after?.x).toBe(before?.x)
+  expect(after?.width).toBe(before?.width)
+  await expect(page.getByText('Your orders will appear here after checkout.')).toBeVisible()
+  await page.screenshot({ path: '../docs/previews/account-orders-desktop.png', fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.getByRole('link', { name: 'Personal details', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'My account', exact: true })).toBeVisible()
+})
+
+
+test('admin lists load alongside one access check and stalled orders can be retried', async ({ page }) => {
+  await setup(page, false)
+  await mockLogin(page)
+  let holdAccess = false
+  let checks = 0
+  let orderCalls = 0
+  let stallOrders = true
+  let signalUsers: () => void = () => {}
+  const usersStarted = new Promise<void>((resolve) => { signalUsers = resolve })
+  await page.route('**/api/admin/**', async (route) => {
+    const path = new URL(route.request().url()).pathname
+    if (path.endsWith('/me')) {
+      checks += 1
+      if (holdAccess) await usersStarted
+      return route.fulfill({ json: { user_id: userId, role: 'admin' } })
+    }
+    if (path.endsWith('/products')) return route.fulfill({ json: products })
+    if (path.endsWith('/users')) { signalUsers(); return route.fulfill({ json: [] }) }
+    if (path.endsWith('/orders')) {
+      orderCalls += 1
+      if (stallOrders) return // Leave requests pending until their deadline.
+      return route.fulfill({ json: [] })
+    }
+    return route.fulfill({ status: 404 })
+  })
+  await page.goto('/admin/login')
+  await page.getByLabel('Admin email').fill('admin@example.test')
+  await page.getByLabel('Admin password').fill('Password123!')
+  await page.getByRole('button', { name: 'Sign in as admin' }).click()
+  await expect(page.getByRole('table')).toBeVisible()
+  checks = 0
+  holdAccess = true
+  await page.goto('/admin/users')
+  await expect(page.getByRole('heading', { name: 'User directory' })).toBeVisible()
+  expect(checks).toBe(1)
+  await page.clock.install()
+  await page.getByRole('link', { name: 'Orders & payments', exact: true }).click()
+  await expect.poll(() => orderCalls).toBeGreaterThan(0)
+  const initialOrderCalls = orderCalls
+  await page.clock.fastForward(20001)
+  await expect(page.getByRole('alert')).toContainText('The server is taking too long')
+  stallOrders = false
+  await page.getByRole('button', { name: 'Retry orders' }).click()
+  await expect(page.getByRole('table')).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  expect(orderCalls).toBe(initialOrderCalls + 1)
 })

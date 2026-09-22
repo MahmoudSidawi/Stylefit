@@ -22,6 +22,8 @@ def client(monkeypatch):
     monkeypatch.setattr(settings, 'supabase_url', None)
     monkeypatch.setattr(settings, 'supabase_publishable_key', None)
     with TestClient(app) as client:
+        # Gateway tests install their own transport after startup.
+        monkeypatch.setattr(database, "_shared_client", None)
         yield client
 
 
@@ -187,3 +189,87 @@ def test_catalogue_fixture_agrees_with_frontend():
     root = Path(__file__).resolve().parents[2]
     assert json.loads((root / 'client/src/features/products/data/catalogue.json').read_text()) == json.loads(
         (root / 'server/app/data/catalogue.json').read_text())
+
+
+@pytest.mark.parametrize('path', ['/api/admin/me', '/api/admin/users'])
+def test_customer_cannot_access_admin_accounts(client, monkeypatch, path):
+    mock = mock_db(monkeypatch, [{'id': USER}, [{'role': 'customer'}]])
+    assert client.get(path, headers=AUTH).status_code == 403
+    assert mock.call_count == 2
+
+
+def test_admin_can_update_customer_name(client, monkeypatch):
+    mock = mock_db(monkeypatch, [{'id': USER}, [{'role': 'admin'}], [{'user_id': OTHER, 'name': 'Updated'}]])
+    assert client.patch(f'/api/admin/users/{OTHER}', headers=AUTH, json={'name': 'Updated'}).status_code == 200
+    assert mock.call_args.kwargs['body'] == {'name': 'Updated'}
+    assert mock.call_args.kwargs['params']['user_id'] == f'eq.{OTHER}'
+
+
+def test_admin_user_update_rejects_role_and_password(client, monkeypatch):
+    mock_db(monkeypatch, [{'id': USER}, [{'role': 'admin'}]])
+    assert client.patch(f'/api/admin/users/{OTHER}', headers=AUTH,
+                        json={'name': 'Updated', 'role': 'admin', 'password': 'secret'}).status_code == 422
+
+
+def test_admin_user_listing_uses_narrow_server_privilege(client, monkeypatch):
+    mock = mock_db(monkeypatch, [{'id': USER}, [{'role': 'admin'}], []])
+    assert client.get('/api/admin/users', headers=AUTH).status_code == 200
+    assert mock.call_args.kwargs['admin_profiles'] is True
+    assert mock.call_args.kwargs['params']['select'] == 'user_id,name,email,role'
+
+
+def test_admin_profiles_gateway_keeps_server_secret_off_customer_requests(client, monkeypatch):
+    monkeypatch.setattr(settings, 'supabase_url', 'https://project.example')
+    monkeypatch.setattr(settings, 'supabase_publishable_key', SecretStr('public-key'))
+    monkeypatch.setattr(settings, 'supabase_secret_key', SecretStr('server-secret'))
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        if request.url.path == '/auth/v1/user':
+            assert request.headers['apikey'] == 'public-key'
+            return httpx.Response(200, json={'id': USER})
+        if request.url.params.get('select') == 'role':
+            assert request.headers['authorization'] == 'Bearer valid-token'
+            return httpx.Response(200, json=[{'role': 'admin'}])
+        assert request.url.path == '/rest/v1/users'
+        assert request.headers['apikey'] == 'server-secret'
+        return httpx.Response(200, json=[])
+
+    original = httpx.AsyncClient
+    monkeypatch.setattr(httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs))
+    assert client.get('/api/admin/users', headers=AUTH).status_code == 200
+    assert len(seen) == 3
+
+
+def test_admin_me_fetches_profile_once(client, monkeypatch):
+    profile = {'user_id': USER, 'role': 'admin', 'name': 'Admin'}
+    mock = mock_db(monkeypatch, [{'id': USER}, [profile]])
+    response = client.get('/api/admin/me', headers=AUTH)
+    assert response.status_code == 200
+    assert response.json() == profile
+    assert mock.call_count == 2
+
+
+def test_pooled_gateway_reuses_connection_without_sharing_identity(monkeypatch):
+    monkeypatch.setattr(settings, 'supabase_url', 'https://project.example')
+    monkeypatch.setattr(settings, 'supabase_publishable_key', SecretStr('public-key'))
+    tokens = []
+    clients = []
+    def handler(request):
+        tokens.append(request.headers['authorization'])
+        if request.url.path == '/auth/v1/user':
+            return httpx.Response(200, json={'id': USER})
+        return httpx.Response(200, json=[])
+    original = httpx.AsyncClient
+    def create(**kwargs):
+        instance = original(transport=httpx.MockTransport(handler), **kwargs)
+        clients.append(instance)
+        return instance
+    monkeypatch.setattr(httpx, 'AsyncClient', create)
+    with TestClient(app) as test_client:
+        assert test_client.get('/api/cart', headers={'Authorization': 'Bearer first'}).status_code == 200
+        assert test_client.get('/api/cart', headers={'Authorization': 'Bearer second'}).status_code == 200
+        assert len(clients) == 1
+    assert clients[0].is_closed
+    assert tokens == ['Bearer first', 'Bearer first', 'Bearer second', 'Bearer second']

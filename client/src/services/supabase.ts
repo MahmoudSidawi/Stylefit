@@ -25,3 +25,14 @@ export function getSupabaseClient() {
   supabase = createClient(url, publishableKey)
   return supabase
 }
+
+let adminClient: ReturnType<typeof createClient> | undefined
+export function getAdminClient() {
+  const url = import.meta.env.VITE_SUPABASE_URL
+  const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  if (!url || !key || !isSupabaseConfigured()) throw new Error('Account services are not configured yet.')
+  adminClient ??= createClient(url, key, {
+    auth: { storageKey: 'stylefit-admin-auth', detectSessionInUrl: false },
+  })
+  return adminClient
+}

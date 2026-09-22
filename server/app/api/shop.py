@@ -201,3 +201,27 @@ async def update_order(order_id: UUID, body: OrderUpdate, user: Identity = Depen
 async def update_category(category_id: Category, body: CategoryUpdate, user: Identity = Depends(admin_user)):
     return await db.request('PATCH', 'rest/v1/categories', user.token,
                             params={'category_id': f'eq.{category_id}'}, body=body.model_dump())
+
+
+@router.get('/admin/me')
+async def admin_me(user: Identity = Depends(current_user)):
+    rows = await owned('users', user)
+    if not rows or rows[0]['role'] != 'admin':
+        raise HTTPException(403, 'Administrator access required.')
+    return rows[0]
+
+
+@router.get('/admin/users')
+async def admin_users(user: Identity = Depends(admin_user)):
+    return await db.request('GET', 'rest/v1/users', user.token,
+                            params={'select': 'user_id,name,email,role', 'order': 'name'}, admin_profiles=True)
+
+
+@router.patch('/admin/users/{user_id}')
+async def admin_update_user(user_id: UUID, body: CategoryUpdate, user: Identity = Depends(admin_user)):
+    rows = await db.request('PATCH', 'rest/v1/users', user.token,
+                            params={'user_id': f'eq.{user_id}', 'select': 'user_id,name,email,role'},
+                            body=body.model_dump(), admin_profiles=True)
+    if not rows:
+        raise HTTPException(404, 'User not found.')
+    return rows[0]

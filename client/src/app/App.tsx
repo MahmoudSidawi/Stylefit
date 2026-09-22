@@ -11,8 +11,9 @@ import { LiveProduct, LiveWishlist, LiveOrders } from '../features/live/Shopping
 const LiveWardrobe = lazy(() => import('../features/wardrobe/pages/WardrobePage'))
 const LiveMatcher = lazy(() => import('../features/matcher/pages/MatcherPage'))
 const LiveAdminProducts = lazy(() => import('../features/live/AdminPages').then((module) => ({ default: module.LiveAdminProducts })))
+const LiveAdminUsers = lazy(() => import('../features/live/AdminPages').then((module) => ({ default: module.LiveAdminUsers })))
 const LiveAdminOrders = lazy(() => import('../features/live/AdminPages').then((module) => ({ default: module.LiveAdminOrders })))
-import { LiveLayout } from '../features/live/shared'
+import { AdminLogin } from '../features/admin/AdminAccess'
 import Profile from '../pages/Profile'
 import { useSession } from '../features/auth/sessionContext'
 
@@ -34,9 +35,12 @@ function RoutedPages() {
     <Route path="/orders" element={<LiveOrders key={accountKey} />} />
     <Route path="/wardrobe" element={<LiveWardrobe key={accountKey} />} />
     <Route path="/matcher" element={<LiveMatcher key={accountKey} />} />
-    <Route path="/admin/products" element={<LiveAdminProducts key={accountKey} />} />
-    <Route path="/admin/orders" element={<LiveAdminOrders key={accountKey} />} />
-    <Route path="/profile" element={<LiveLayout title="Your Account" privatePage><Profile key={accountKey} /></LiveLayout>} />
+    <Route path="/admin" element={<Navigate to="/admin/products" replace />} />
+    <Route path="/admin/login" element={<AdminLogin />} />
+    <Route path="/admin/users" element={<SessionProvider admin><LiveAdminUsers /></SessionProvider>} />
+    <Route path="/admin/products" element={<SessionProvider admin><LiveAdminProducts /></SessionProvider>} />
+    <Route path="/admin/orders" element={<SessionProvider admin><LiveAdminOrders /></SessionProvider>} />
+    <Route path="/profile" element={<Profile key={accountKey} />} />
     <Route path="/login" element={<AuthPage key="login" initialMode="login" />} />
     <Route path="/register" element={<AuthPage key="register" initialMode="register" />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />

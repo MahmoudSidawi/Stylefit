@@ -1,10 +1,36 @@
-"""Supabase gateway. Every data request runs under the caller's RLS identity."""
+"""Supabase gateway. Caller RLS by default; verified admin profile management uses a server key."""
 from typing import Any
+from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import HTTPException
 
 from app.core.config import settings
+
+
+_shared_client: httpx.AsyncClient | None = None
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    global _shared_client
+    # Reuse TLS connections; identity headers are supplied separately on every request.
+    async with httpx.AsyncClient(timeout=15, limits=httpx.Limits(max_connections=50, max_keepalive_connections=20)) as client:
+        _shared_client = client
+        try:
+            yield
+        finally:
+            _shared_client = None
+
+
+@asynccontextmanager
+async def http_client():
+    if _shared_client is not None:
+        yield _shared_client
+    else:
+        # Standalone setup scripts do not run the application lifespan.
+        async with httpx.AsyncClient(timeout=15) as client:
+            yield client
 
 
 def configured() -> bool:
@@ -16,16 +42,25 @@ def configured() -> bool:
 async def request(method: str, path: str, token: str | None = None,
                   params: dict | None = None, body: Any = None,
                   prefer: str = "return=representation", content: bytes | None = None,
-                  content_type: str | None = None) -> Any:
+                  content_type: str | None = None, admin_profiles: bool = False) -> Any:
     if not configured():
         raise HTTPException(503, "Configure Supabase and apply the database migrations first.")
     headers = {"apikey": settings.supabase_publishable_key.get_secret_value(), "Prefer": prefer}
-    if token:
+    if admin_profiles:
+        # Only the verified /admin/users handlers use this narrow privilege.
+        if path != 'rest/v1/users' or method not in ('GET', 'PATCH'):
+            raise HTTPException(403, 'Unsupported administrator operation.')
+        if not settings.supabase_secret_key or not settings.supabase_secret_key.get_secret_value().strip():
+            raise HTTPException(503, 'Administrator account management is not configured.')
+        key = settings.supabase_secret_key.get_secret_value()
+        headers['apikey'] = key
+        headers['Authorization'] = f'Bearer {key}'
+    elif token:
         headers["Authorization"] = f"Bearer {token}"
     if content_type:
         headers["Content-Type"] = content_type
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with http_client() as client:
             response = await client.request(method, f"{settings.supabase_url.rstrip('/')}/{path}",
                                             headers=headers, params=params,
                                             **({'content': content} if content is not None else {'json': body}))
@@ -57,7 +92,7 @@ async def download(path: str, token: str, max_bytes: int = 5 * 1024 * 1024) -> b
     if not configured():
         raise HTTPException(503, 'Configure Supabase first.')
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with http_client() as client:
             async with client.stream('GET', f'{settings.supabase_url.rstrip("/")}/{path}', headers={
                 'apikey': settings.supabase_publishable_key.get_secret_value(), 'Authorization': f'Bearer {token}',
             }) as response:

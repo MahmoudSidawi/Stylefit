@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { getSupabaseClient } from '../../../services/supabase'
 import { Icon } from '../../../components/ui/Icon'
 import { AuthField } from '../components/AuthField'
@@ -26,6 +26,7 @@ export default function AuthPage({
   initialMode: 'login' | 'register'
 }) {
   const location = useLocation()
+  const navigate = useNavigate()
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [values, setValues] = useState<AuthValues>(emptyValues)
   const [errors, setErrors] = useState<AuthErrors>({})
@@ -80,13 +81,15 @@ export default function AuthPage({
         setMessage('If an account exists for this email, a password reset link will arrive shortly.')
       } else if (register) {
         const { data, error } = await client.auth.signUp({ email: values.email.trim(), password: values.password,
-          options: { data: { name: values.name.trim() }, emailRedirectTo: `${window.location.origin}/profile` } })
+          options: { data: { name: values.name.trim() }, emailRedirectTo: `${window.location.origin}/catalogue` } })
         if (error) throw error
-        setMessage(data.session ? 'Your account is ready. You are signed in.' : 'Check your email to confirm your account, then sign in.')
+        navigate('/catalogue', { replace: true, state: { message: data.session ? 'Welcome to StyleFit.' : 'Check your email to confirm your account before signing in.' } })
+        return
       } else {
         const { error } = await client.auth.signInWithPassword({ email: values.email.trim(), password: values.password })
         if (error) throw error
-        setMessage('You are signed in to StyleFit.')
+        navigate('/catalogue', { replace: true })
+        return
       }
       setValues(emptyValues)
       setReviewed(true)

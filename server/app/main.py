@@ -7,8 +7,10 @@ from app.api.shop import router as shop_router
 from app.api.images import router as images_router
 from app.api.matching import router as matching_router
 from app.core.config import settings
+from app.services import database
 
 app = FastAPI(
+    lifespan=database.lifespan,
     title="StyleFit API",
     description="StyleFit clothing catalogue and authenticated shopping API.",
     version="0.3.0",

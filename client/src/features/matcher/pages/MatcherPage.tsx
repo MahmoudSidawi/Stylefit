@@ -18,6 +18,7 @@ import { occasionLabels } from '../data/garments'
 import type { ArchiveSource, Garment } from '../types'
 import '../../products/styles/catalogue.css'
 import '../styles/matcher.css'
+import '../styles/workspace.css'
 
 export default function MatcherPage() {
   const [params] = useSearchParams()
@@ -33,6 +34,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
   const cart = useRemote(shopApi.cart, session?.user.id ?? 'guest', !!session)
   const navigate = useNavigate()
   const saved = useSavedLooks(session?.user.id ?? 'guest')
+  const [mobilePanel, setMobilePanel] = useState<'clothes' | 'results'>('clothes')
   const [query, setQuery] = useState('')
   const [source, setSource] = useState<ArchiveSource>('store')
   const [filter, setFilter] = useState<ArchiveFilter>('all')
@@ -58,18 +60,6 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
   async function addLookToBag() {
     if (await outfit.addToBag()) navigate('/cart')
   }
-  function exploreAccessories() {
-    setSource('wardrobe')
-    setFilter('dress')
-    setQuery('')
-    document.getElementById('source-archive')?.scrollIntoView({
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        ? 'instant'
-        : 'smooth',
-      block: 'start',
-    })
-    document.getElementById('source-wardrobe')?.focus({ preventScroll: true })
-  }
 
   return (
     <div className="storefront matcher-page">
@@ -86,14 +76,12 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
           <div className="studio-container studio-intro-inner">
             <div>
               <div className="studio-eyebrow">
-                <span>Algorithmic salon</span>
-                <span>AI styling / Your creative space</span>
+                <span>YOUR PERSONAL STYLING ROOM</span>
+
               </div>
-              <h1>Outfit Harmony Studio</h1>
+              <h1>Fitting Engine</h1>
               <p>
-                Compose tactile garments into balanced silhouettes. Bring your
-                wardrobe favorites together with atelier selections and explore
-                the possibilities.
+                Choose your clothes. Build a look. Find what works together.
               </p>
             </div>
             <div className="studio-settings">
@@ -131,7 +119,11 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
           </div>
         </section>
         <div className="studio-container"><Notice loading={outfit.loading} error={outfit.error} /></div>
-        <AccountGate><div className="studio-container studio-workspace">
+        <AccountGate><div className="studio-container mobile-workspace-switch" role="group" aria-label="Fitting workspace panels">
+          <button aria-pressed={mobilePanel === 'clothes'} onClick={() => setMobilePanel('clothes')}>Choose clothes</button>
+          <button aria-pressed={mobilePanel === 'results'} onClick={() => setMobilePanel('results')}>AI results{outfit.result ? ` / ${outfit.result.score}%` : ''}</button>
+        </div><div className={`studio-container studio-workspace mobile-panel-${mobilePanel}`}>
+
           <SourceArchive
             garments={outfit.garments}
             source={source}
@@ -151,12 +143,10 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
             storeCount={outfit.storePieces.length}
             onRemove={outfit.remove}
             onSize={outfit.changeSize}
-            onCheck={outfit.checkMatch}
+            onCheck={async () => { if (await outfit.checkMatch()) setMobilePanel('results') }}
             onClear={outfit.clear}
-            onReset={outfit.reset}
             onSave={() => setDialog('save')}
             onAddBag={addLookToBag}
-            onAccessories={exploreAccessories}
           />
           <MatchInsights
             result={outfit.result}
@@ -166,39 +156,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
             onAlternative={stage}
           />
         </div></AccountGate>
-        <section
-          className="studio-principles"
-          aria-label="A considered approach to styling"
-        >
-          <div className="studio-container">
-            <div>
-              <span className="overline">01 / Color in conversation</span>
-              <h2>Tonal Resonance Theory</h2>
-              <p>
-                Warm shades bring a look together; unexpected contrasts give it
-                character. Explore the relationship between each piece in your
-                palette.
-              </p>
-            </div>
-            <div>
-              <span className="overline">02 / The shape of a look</span>
-              <h2>Weight &amp; Drape Balancing</h2>
-              <p>
-                Pair a structured layer with fluid silk, or let a wide trouser
-                anchor a softer top. Small changes can shift the feeling of an
-                entire outfit.
-              </p>
-            </div>
-            <div>
-              <span className="overline">03 / A wardrobe with intention</span>
-              <h2>Make Room for Possibility</h2>
-              <p>
-                Reimagine pieces you already love alongside something new. The
-                private wardrobe keeps your own pieces close at hand.
-              </p>
-            </div>
-          </div>
-        </section>
+        <details className="studio-container styling-tips"><summary>Styling tips</summary><p>Start with a top and bottom. Try complementary colors, balance relaxed and structured pieces, and choose an occasion for more relevant feedback. Save your favorite combinations to revisit later.</p></details>
       </main>
       <StorefrontFooter />
       <div

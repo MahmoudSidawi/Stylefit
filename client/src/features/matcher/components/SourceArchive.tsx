@@ -49,7 +49,7 @@ export function SourceArchive({
     >
       <div className="studio-panel-heading">
         <h2 id="archive-title">
-          <Icon name="hanger" size={21} /> Source Archive
+          <Icon name="hanger" size={21} /> Choose clothes
         </h2>
         <span>{visible.length} items</span>
       </div>
@@ -82,7 +82,7 @@ export function SourceArchive({
               }
             }}
           >
-            {tab === 'store' ? 'Atelier Store' : 'Your Wardrobe'}{' '}
+            {tab === 'store' ? 'Store' : 'Your Wardrobe'}{' '}
             <span>
               ({garments.filter((item) => item.source === tab).length})
             </span>

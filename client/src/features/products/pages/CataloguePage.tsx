@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { StorefrontHeader } from '../../../components/layout/StorefrontHeader'
 import { StorefrontFooter } from '../../../components/layout/StorefrontFooter'
 import { Icon } from '../../../components/ui/Icon'
@@ -44,7 +44,8 @@ export default function CataloguePage({
   const [filterSize, setFilterSize] = useState('all')
   const [preview, setPreview] = useState<Product | null>(null)
   const navigate = useNavigate()
-  const [announcement, setAnnouncement] = useState('')
+  const location = useLocation()
+  const [announcement, setAnnouncement] = useState(location.state?.message ?? '')
   const { session } = useSession()
   const catalogue = useRemote(loadCatalogue, 'catalogue')
   const products = (catalogue.data?.items ?? []).map(toProduct)

@@ -8,6 +8,8 @@ import { ProductCard } from '../products/components/ProductCard'
 import { ProductPreview } from '../products/components/ProductPreview'
 import { toProduct } from '../products/data/apiCatalogue'
 import type { Product } from '../products/types'
+import { AccountLayout } from '../../pages/AccountLayout'
+import { Icon } from '../../components/ui/Icon'
 import { formatMoney } from '../../utils/currency'
 
 export function ProductTile({ product, saved = false }: { product: StoreProduct; saved?: boolean }) {
@@ -115,9 +117,15 @@ export function LiveWishlist() {
 export function LiveOrders() {
   const { session } = useSession()
   const orders = useRemote(shopApi.orders, session?.user.id ?? '', !!session)
-  return <LiveLayout title="Your Orders" privatePage><Notice {...orders} />{orders.data?.map((order) => <article className="live-card" key={order.order_id}>
-    <h2>{order.status[0].toUpperCase() + order.status.slice(1)} · {formatMoney(Number(order.total_amount))}</h2>
-    <p>{new Date(order.created_at).toLocaleDateString()} · {order.is_paid ? 'Payment collected' : 'Cash on delivery'}</p>
-    <p>Order {order.order_id}</p><ul>{order.order_items.map((item, i) => <li key={i}>{item.product_name} · {item.size} · {item.color} × {item.quantity} — {formatMoney(Number(item.unit_price) * item.quantity)}</li>)}</ul>
-  </article>)}{orders.data?.length === 0 && <p>Your orders will appear here after checkout.</p>}</LiveLayout>
+  return <AccountLayout title="My orders" description="Track your purchases, from our collection to your door.">
+    <Notice {...orders} />
+    {orders.error && <button className="button button-surface" onClick={orders.reload}>Try again</button>}
+    {orders.data?.map((order) => <article className="account-detail-card account-order" key={order.order_id}>
+      <header className="account-order-heading"><div><span className="profile-eyebrow">{new Date(order.created_at).toLocaleDateString()}</span><h2>Order {order.order_id}</h2></div><span className={`account-order-status status-${order.status}`}>{order.status}</span></header>
+      <div className="account-order-items">{order.order_items.map((item, index) => <div key={index}><span className="profile-section-icon"><Icon name="bag" size={18} /></span><div><h3>{item.product_name}</h3><p>Size {item.size} / {item.color} / Qty {item.quantity}</p></div><strong>{formatMoney(Number(item.unit_price) * item.quantity)}</strong></div>)}</div>
+      <footer className="account-order-total"><span>{order.status === 'cancelled' ? 'Order cancelled' : order.is_paid ? 'Payment collected' : 'Cash on delivery / Payment pending'}</span><div>Total <strong>{formatMoney(Number(order.total_amount))}</strong></div></footer>
+      {order.delivery_address && <details className="account-delivery"><summary>Delivery details</summary><p>{order.recipient_name}<br />{order.phone}<br />{order.delivery_address}</p></details>}
+    </article>)}
+    {orders.data?.length === 0 && <section className="account-detail-card account-orders-empty"><span className="profile-section-icon"><Icon name="bag" size={24} /></span><h2>Your next favorite is waiting.</h2><p>Your orders will appear here after checkout.</p><Link className="button button-primary" to="/clothes">Explore the collection<Icon name="arrow" size={16} /></Link></section>}
+  </AccountLayout>
 }

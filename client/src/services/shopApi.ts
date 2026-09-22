@@ -76,6 +76,9 @@ export const shopApi = {
   match: (items: MatchSelection[], occasion: string, includeProfile: boolean) =>
     apiRequest<AiMatch>('/api/matches', json('POST', { items, occasion, include_profile: includeProfile })),
   analyzeGarment: (itemId: string) => apiRequest<GarmentAnalysis>(`/api/wardrobe/${id(itemId)}/analyze`, { method: 'POST' }),
+  adminMe: () => apiRequest<Profile>('/api/admin/me'),
+  adminUsers: () => apiRequest<Pick<Profile, 'user_id' | 'name' | 'email' | 'role'>[]>('/api/admin/users'),
+  updateUser: (userId: string, name: string) => apiRequest(`/api/admin/users/${id(userId)}`, json('PATCH', { name })),
   adminProducts: () => apiRequest<StoreProduct[]>('/api/admin/products'),
   uploadProductImage: (file: File) => {
     const body = new FormData(); body.set('file', file)
