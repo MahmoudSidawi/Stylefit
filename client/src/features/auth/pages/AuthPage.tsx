@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { getSupabaseClient } from '../../../services/supabase'
 import { Icon } from '../../../components/ui/Icon'
 import { AuthField } from '../components/AuthField'
@@ -25,12 +25,13 @@ export default function AuthPage({
 }: {
   initialMode: 'login' | 'register'
 }) {
+  const location = useLocation()
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [values, setValues] = useState<AuthValues>(emptyValues)
   const [errors, setErrors] = useState<AuthErrors>({})
   const [reviewed, setReviewed] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [requestError, setRequestError] = useState('')
+  const [requestError, setRequestError] = useState(location.state?.message || '')
   const [message, setMessage] = useState('')
   const resultRef = useRef<HTMLDivElement>(null)
   const register = mode === 'register'

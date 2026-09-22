@@ -57,7 +57,6 @@ export function StorefrontHeader({
             <NavLink to="/cart" onClick={() => setMenuOpen(false)}>
               Bag ({bagCount})
             </NavLink>
-            <NavLink to="/admin/products" onClick={() => setMenuOpen(false)}>Admin</NavLink>
           </nav>
           <div className="header-tools">
             <label className="search-field">

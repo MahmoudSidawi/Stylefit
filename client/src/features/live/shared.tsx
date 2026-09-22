@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useRemote } from './hooks'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { StorefrontHeader } from '../../components/layout/StorefrontHeader'
 import { StorefrontFooter } from '../../components/layout/StorefrontFooter'
 import { useSession } from '../auth/sessionContext'
@@ -23,7 +23,7 @@ export function LiveLayout({ title, children, privatePage = false }: { title: st
       <nav className="live-links" aria-label="Your shopping pages"><Link to="/clothes">Clothes</Link><Link to="/wishlist">Wishlist</Link><Link to="/orders">Orders</Link><Link to="/profile">Account</Link></nav>
       {query.trim() && <p><Link to={`/clothes?q=${encodeURIComponent(query.trim())}`}>Search all clothes for “{query}”</Link></p>}
       {privatePage && loading ? <p role="status">Checking your session…</p> : privatePage && !session ?
-        <p><Link to="/login">Sign in</Link> to continue. Your cart, wardrobe, and orders are saved to your account.</p> : children}
+        <Navigate to="/login" state={{ message: "Need to log in" }} replace /> : children}
     </main><StorefrontFooter />
   </div>
 }
@@ -31,6 +31,6 @@ export function LiveLayout({ title, children, privatePage = false }: { title: st
 export function AccountGate({ children }: { children: ReactNode }) {
   const { session, loading } = useSession()
   if (loading) return <p role="status">Checking your session...</p>
-  if (!session) return <p className="wardrobe-notice"><Link to="/login">Sign in</Link> to continue. Your cart, wardrobe, and orders are saved to your account.</p>
+  if (!session) return <Navigate to="/login" state={{ message: "Need to log in" }} replace />
   return <>{children}</>
 }

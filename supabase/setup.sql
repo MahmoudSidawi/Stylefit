@@ -2,6 +2,35 @@
 -- Alternative to the migrations: do not run this on an already migrated project.
 begin;
 
+drop policy if exists wardrobe_images_read on storage.objects;
+drop policy if exists wardrobe_images_upload on storage.objects;
+drop policy if exists wardrobe_images_delete on storage.objects;
+drop policy if exists product_images_read on storage.objects;
+drop policy if exists product_images_upload on storage.objects;
+drop policy if exists product_images_delete on storage.objects;
+
+drop trigger if exists sync_stylefit_user on auth.users cascade;
+drop function if exists public.sync_auth_user cascade;
+drop function if exists public.is_admin cascade;
+drop function if exists public.set_cart_item cascade;
+drop function if exists public.place_order cascade;
+drop function if exists public.update_order_status cascade;
+drop function if exists public.create_product cascade;
+drop function if exists public.reserve_ai_request cascade;
+drop function if exists public.change_cart_variant cascade;
+drop function if exists public.add_cart_item cascade;
+drop function if exists public.browse_products cascade;
+
+drop table if exists public.order_items cascade;
+drop table if exists public.orders cascade;
+drop table if exists public.wishlist_items cascade;
+drop table if exists public.cart_items cascade;
+drop table if exists public.wardrobe_items cascade;
+drop table if exists public.product_variants cascade;
+drop table if exists public.products cascade;
+drop table if exists public.categories cascade;
+drop table if exists public.users cascade;
+
 -- Source: 202609210001_shop.sql
 -- Supabase Auth owns credentials. public.users contains application profile data only.
 
