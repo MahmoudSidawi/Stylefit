@@ -7,8 +7,49 @@ from app.schemas.shop import (CartUpdate, Checkout, OrderUpdate, ProductCreate, 
                               ProfileUpdate, VariantInput, WardrobeInput, WishlistAdd)
 from app.services import database as db
 from app.schemas.shop import CartVariantChange, CategoryUpdate, Category
+from app.schemas.shop import SavedLookInput
 
 router = APIRouter(prefix='/api', tags=['Shop'])
+
+
+@router.get('/looks')
+async def saved_looks(user: Identity = Depends(current_user)):
+    return await owned('saved_looks', user, 'id,name,occasion,selection', order='created_at.desc')
+
+
+@router.post('/looks', status_code=201)
+async def save_look(body: SavedLookInput, user: Identity = Depends(current_user)):
+    categories = set()
+    for item in body.selection:
+        product_id, separator, color = item.garmentId.partition(':')
+        try:
+            UUID(product_id)
+        except ValueError as exc:
+            raise HTTPException(422, 'Invalid garment identifier.') from exc
+        if separator:
+            rows = await db.request('GET', 'rest/v1/product_variants', user.token, params={
+                'product_id': f'eq.{product_id}', 'size': f'eq.{item.size}', 'color': f'eq.{color}',
+                'is_active': 'eq.true', 'products.is_active': 'eq.true', 'select': 'products!inner(category_id)',
+            })
+            category = rows[0]['products']['category_id'] if rows else None
+        else:
+            rows = await owned('wardrobe_items', user, 'category_id', wardrobe_item_id=f'eq.{product_id}')
+            category = rows[0]['category_id'] if rows else None
+        if category is None:
+            raise HTTPException(404, 'A selected garment is unavailable.')
+        categories.add(category)
+    if 'dresses' in categories and 'bottoms' in categories:
+        raise HTTPException(422, 'A dress cannot be combined with jeans or other bottoms.')
+    rows = await db.request('POST', 'rest/v1/saved_looks', user.token,
+                            body={**body.model_dump(), 'user_id': user.user_id})
+    return rows[0]
+
+
+@router.delete('/looks/{look_id}', status_code=204)
+async def delete_look(look_id: UUID, user: Identity = Depends(current_user)):
+    await db.request('DELETE', 'rest/v1/saved_looks', user.token,
+                     params={'id': f'eq.{look_id}', 'user_id': f'eq.{user.user_id}'})
+    return Response(status_code=204)
 
 
 async def owned(table, user, select='*', **filters):

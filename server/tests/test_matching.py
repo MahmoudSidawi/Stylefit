@@ -109,7 +109,7 @@ def test_profile_opt_in_whitelists_fields(client, monkeypatch):
 
 @pytest.mark.parametrize('items', [[], [{'source': 'store', 'variant_id': V1}],
     [{'source': 'store', 'variant_id': V1}] * 2,
-    [{'source': 'store', 'variant_id': str(uuid4())} for _ in range(4)]])
+    [{'source': 'store', 'variant_id': str(uuid4())} for _ in range(6)]])
 def test_selection_validation(client, monkeypatch, items):
     ai = mock_ai(monkeypatch)
     assert client.post('/api/matches', json=body(items=items)).status_code == 422
@@ -122,6 +122,41 @@ def test_same_product_different_sizes_rejected(client, monkeypatch):
     ai = mock_ai(monkeypatch)
     assert client.post('/api/matches', json=body()).status_code == 422
     ai.assert_not_called()
+
+
+@pytest.mark.parametrize('sources', [('store', 'store'), ('wardrobe', 'store'), ('store', 'wardrobe'), ('wardrobe', 'wardrobe')])
+def test_dress_and_jeans_rejected_before_photos_or_ai(client, monkeypatch, sources):
+    records, selections = [], []
+    for source, category, kind in zip(sources, ['dresses', 'bottoms'], ['dresses', 'jeans']):
+        record = {'name': kind, 'category_id': category, 'clothing_type': kind, 'image_url': f'{USER}/{kind}.jpg'}
+        if source == 'store':
+            row = store()
+            row[0]['products'].update(record)
+        else:
+            row = [record]
+        records.append(row)
+        selections.append({'source': source, 'variant_id' if source == 'store' else 'wardrobe_item_id': str(uuid4())})
+    mock_db(monkeypatch, [True, *records])
+    photo = AsyncMock()
+    monkeypatch.setattr(database, 'download', photo)
+    ai = mock_ai(monkeypatch)
+    result = client.post('/api/matches', json=body(items=selections))
+    assert result.status_code == 422
+    assert 'dress' in result.json()['detail'].lower()
+    photo.assert_not_called()
+    ai.assert_not_called()
+
+
+def test_top_jeans_shoes_hat_match_can_include_four_items(client, monkeypatch):
+    rows = []
+    for category in ['tops', 'bottoms', 'shoes', 'hats']:
+        row = store()
+        row[0]['products']['category_id'] = category
+        rows.append(row)
+    mock_db(monkeypatch, [True, *rows])
+    mock_ai(monkeypatch)
+    selections = [{'source': 'store', 'variant_id': str(uuid4())} for _ in rows]
+    assert client.post('/api/matches', json=body(items=selections)).status_code == 200
 
 
 def test_wardrobe_photo_is_normalized_and_sent_only_after_ownership_check(client, monkeypatch):

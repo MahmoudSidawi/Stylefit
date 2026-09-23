@@ -20,7 +20,7 @@ Selection = Annotated[StoreSelection | WardrobeSelection, Field(discriminator='s
 
 
 class MatchRequest(Input):
-    items: list[Selection] = Field(min_length=2, max_length=3)
+    items: list[Selection] = Field(min_length=2, max_length=5)
     occasion: Literal['work', 'weekend', 'evening'] = 'weekend'
     include_profile: bool = False
 

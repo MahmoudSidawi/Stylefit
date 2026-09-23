@@ -1,6 +1,6 @@
 import type { Variant } from '../../services/shopApi'
 export type Category =
-  'all' | 'tops' | 'bottoms' | 'dresses'
+  'all' | 'tops' | 'bottoms' | 'dresses' | 'shoes' | 'hats'
 
 export type Product = {
   variants?: Variant[]
@@ -10,11 +10,9 @@ export type Product = {
   price: number
   category: string
   sizes: string[]
-  match: number
   note: string
   image: string
 }
 
 export type BagItem = { productId: string; size: string; quantity: number }
-export type ShopState = { favorites: string[]; bag: BagItem[]; promoCode?: string }
-export type SortOrder = 'editorial' | 'match' | 'price-asc' | 'price-desc'
+export type SortOrder = 'editorial' | 'price-asc' | 'price-desc'

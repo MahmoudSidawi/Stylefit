@@ -17,5 +17,5 @@ export function toProduct(product: StoreProduct): Product {
   return { id: product.product_id, name: product.name, description: product.description,
     category: product.category_id, price: Number(variants[0]?.price ?? 0),
     sizes: [...new Set(variants.map((variant) => variant.size))],
-    image: variants[0]?.image_url ?? '', match: 0, note: [product.style, product.pattern].filter(Boolean).join(' / '), variants }
+    image: variants[0]?.image_url ?? '', note: [product.style, product.pattern].filter(Boolean).join(' / '), variants }
 }

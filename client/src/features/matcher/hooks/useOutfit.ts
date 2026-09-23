@@ -1,3 +1,4 @@
+import { slotsConflict } from '../utils/outfitRules'
 import { useState } from 'react'
 import { useSession } from '../../auth/sessionContext'
 import { useWardrobe } from '../../wardrobe/hooks/useWardrobe'
@@ -17,7 +18,7 @@ export function useOutfit(wardrobeId?: string) {
     return [...new Set(variants.map((v) => v.color))].map((color) => {
       const group = variants.filter((v) => v.color === color)
       return { id: product.product_id + ':' + color, productId: product.product_id, name: product.name, brand: 'StyleFit', material: product.description,
-        source: 'store' as const, slot: product.category_id === 'bottoms' ? 'anchor' as const : product.category_id === 'dresses' ? 'dress' as const : 'core' as const,
+        source: 'store' as const, slot: product.category_id === 'shoes' ? 'shoes' as const : product.category_id === 'hats' ? 'hat' as const : product.category_id === 'bottoms' ? 'anchor' as const : product.category_id === 'dresses' ? 'dress' as const : 'core' as const,
         price: Number(group[0]?.price ?? 0), sizes: group.map((v) => v.size), image: group[0]?.image_url ?? '', detailImage: group[0]?.image_url ?? '', color, colorName: color,
         tone: 'neutral' as const, drape: 'soft' as const, occasions: ['work', 'weekend'] as Occasion[], variants: group }
     })
@@ -40,7 +41,7 @@ export function useOutfit(wardrobeId?: string) {
   })
   const storePieces = selected.filter(({ garment }) => garment.source === 'store')
   function stage(garment: Garment) {
-    setSelection((current) => [...current.filter((entry) => garments.find((g) => g.id === entry.garmentId)?.slot !== garment.slot), { garmentId: garment.id, size: garment.sizes[1] ?? garment.sizes[0] }])
+    setSelection((current) => [...current.filter((entry) => !slotsConflict(garments.find((g) => g.id === entry.garmentId)?.slot, garment.slot)), { garmentId: garment.id, size: garment.sizes[1] ?? garment.sizes[0] }])
   }
   function references(): MatchSelection[] {
     return selected.map(({ garment, size }) => {
@@ -55,9 +56,16 @@ export function useOutfit(wardrobeId?: string) {
     loading: catalogue.loading || wardrobe.loading, error: action.error || catalogue.error || wardrobe.error, busy: action.busy,
     remove: (id: string) => setSelection((current) => current.filter((entry) => entry.garmentId !== id)),
     changeSize: (id: string, size: string) => setSelection((current) => current.map((entry) => entry.garmentId === id ? { ...entry, size } : entry)),
-    checkMatch: () => action.run(async () => { if (selected.length < 2) throw new Error('Select two or three pieces.'); setAnalysis({ signature, result: await shopApi.match(references(), occasion, includeProfile) }) }),
+    checkMatch: () => action.run(async () => { if (selected.length < 2) throw new Error('Select two to five pieces.'); setAnalysis({ signature, result: await shopApi.match(references(), occasion, includeProfile) }) }),
     addToBag: () => action.run(async () => { for (const item of references()) if (item.source === 'store') await shopApi.addToCart(item.variant_id) }),
     reset: () => { setSelection([]); setAnalysis(null) },
-    load: (look: SavedLook) => { setSelection(look.selection.filter((entry) => garments.some((g) => g.id === entry.garmentId && g.sizes.includes(entry.size)))); setOccasion(look.occasion); setName(look.name) },
+    load: (look: SavedLook) => {
+      const valid = look.selection.filter((entry) => garments.some((g) => g.id === entry.garmentId && g.sizes.includes(entry.size)))
+      setSelection(valid.reduce<Selection[]>((current, entry) => {
+        const garment = garments.find((g) => g.id === entry.garmentId)!
+        return [...current.filter((old) => !slotsConflict(garments.find((g) => g.id === old.garmentId)?.slot, garment.slot)), entry]
+      }, []))
+      setOccasion(look.occasion); setName(look.name)
+    },
     clear: () => setSelection([]) }
 }

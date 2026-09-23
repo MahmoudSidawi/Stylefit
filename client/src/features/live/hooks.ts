@@ -17,7 +17,8 @@ export function useRemote<T>(loader: () => Promise<T>, key: string, enabled = tr
     if (enabled) latest.current().then((data) => {
       if (active) setState({ data, error: '', requestKey, sourceKey: key })
     }).catch((error: unknown) => {
-      if (active) setState({ error: error instanceof Error ? error.message : 'Unable to load this page.', requestKey, sourceKey: key })
+      if (active) setState((previous) => ({ data: previous.sourceKey === key ? previous.data : undefined,
+        error: error instanceof Error ? error.message : 'Unable to load this page.', requestKey, sourceKey: key }))
     })
     return () => { active = false }
   }, [requestKey, enabled, key])

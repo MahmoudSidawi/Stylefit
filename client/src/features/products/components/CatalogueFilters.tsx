@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Icon } from '../../../components/ui/Icon'
-import { categories } from '../data/mockCatalogue'
 import type { Category, Product } from '../types'
 
 type Props = {
+  categories: { id: Category; label: string; description?: string }[]
   products: Product[]
   category: Category
   setCategory: (category: Category) => void
@@ -18,6 +18,7 @@ type Props = {
 }
 
 export function CatalogueFilters({
+  categories,
   products,
   category,
   setCategory,

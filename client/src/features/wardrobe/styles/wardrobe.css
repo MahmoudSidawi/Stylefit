@@ -762,3 +762,5 @@
     font-size: 12px !important;
   }
 }
+
+.wardrobe-photo-status { height: 100%; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #f3eee8; color: #86766b; font-size: 12px; }

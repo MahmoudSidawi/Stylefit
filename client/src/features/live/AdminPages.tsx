@@ -55,7 +55,7 @@ export function LiveAdminProducts() {
   const [page, setPage] = useState(0)
   const [editing, setEditing] = useState<StoreProduct | null>(null)
   const [adding, setAdding] = useState(false)
-  const initial = { name: '', description: '', clothing_type: 't-shirts', style: 'casual', pattern: 'solid', sizes: 'XS,S,M,L,XL', color: 'White', price: '25', stock: '20', image_url: '/clothes/basic-tee.svg' }
+  const initial = { name: '', description: '', clothing_type: 't-shirts', style: 'casual', pattern: 'solid', sizes: '', color: '', price: '', stock: '', image_url: '' }
   const [draft, setDraft] = useState(initial)
   const [photo, setPhoto] = useState<File | null>(null)
   const all = products.data ?? []
@@ -67,6 +67,7 @@ export function LiveAdminProducts() {
       const sizes = [...new Set(draft.sizes.split(',').map((size) => size.trim()).filter(Boolean))]
       if (!sizes.length) throw new Error('Enter at least one size.')
       const imageUrl = photo ? (await shopApi.uploadProductImage(photo)).image_url : draft.image_url
+      if (!imageUrl) throw new Error('Upload a product photo or enter its URL.')
       await shopApi.createProduct({ name: draft.name, description: draft.description, clothing_type: draft.clothing_type,
         category_id: clothingKinds[draft.clothing_type as keyof typeof clothingKinds], style: draft.style, pattern: draft.pattern, is_active: true,
         variants: sizes.map((size) => ({ size, color: draft.color, price: Number(draft.price), stock_quantity: Number(draft.stock), image_url: imageUrl, is_active: true })) })
@@ -85,7 +86,7 @@ export function LiveAdminProducts() {
       </tbody></table></div><Pager page={currentPage} total={filtered.length} onPage={setPage} />
     </section>
     {adding && <Dialog title="Add product" onClose={() => { if (!action.busy) setAdding(false) }} wide><div className="admin-editor"><Notice {...action} /><form className="live-form" onSubmit={create}>
-      {(['name', 'description', 'style', 'pattern', 'sizes', 'color', 'image_url'] as const).map((field) => <label key={field}>{field === 'image_url' ? 'Image URL or /clothes/ asset path' : field === 'sizes' ? 'Sizes separated by commas' : field[0].toUpperCase() + field.slice(1)}<input required value={draft[field]} onChange={(e) => setDraft({ ...draft, [field]: e.target.value })} /></label>)}
+      {(['name', 'description', 'style', 'pattern', 'sizes', 'color', 'image_url'] as const).map((field) => <label key={field}>{field === 'image_url' ? 'Image URL' : field === 'sizes' ? 'Sizes separated by commas' : field[0].toUpperCase() + field.slice(1)}<input required={field !== 'image_url' || !photo} value={draft[field]} onChange={(e) => setDraft({ ...draft, [field]: e.target.value })} /></label>)}
       <label>Clothing type<select value={draft.clothing_type} onChange={(e) => setDraft({ ...draft, clothing_type: e.target.value })}>{Object.keys(clothingKinds).map((type) => <option key={type}>{type}</option>)}</select></label>
       <label>Upload product photo (optional)<input type="file" accept="image/jpeg,image/png" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} /></label>
       <label>Price<input required type="number" min="0.01" step="0.01" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} /></label>

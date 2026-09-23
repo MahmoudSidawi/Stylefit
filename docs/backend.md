@@ -1,3 +1,11 @@
+# Current data sources
+
+All catalogue, account, wardrobe, cart, wishlist, orders, category names, saved looks and storefront content are read from Supabase. No offline sample catalogue or browser-only saved-look fallback exists. Groq remains the AI provider. Browser storage is used by Supabase Auth for sessions, not as the business database.
+
+Apply `202609230002_live_content_looks.sql` to existing databases, then run `server/scripts/seed_storefront.py`. Homepage content lives in `site_content` (key `storefront`) and its photos in Supabase Storage. Import fixtures under `server/scripts/fixtures` are provisioning input only.
+
+The historical implementation notes below describe earlier stages and are superseded by this section.
+
 # Backend setup and implementation
 
 The backend now implements the three basic categories: **Tops** (T-shirts, shirts, hoodies), **Bottoms** (jeans, pants, shorts, skirts), and **Dresses**. The 24 sample products (120 size variants) use local SVG illustrations and sample USD prices. The original BRD and ERD remain unchanged.

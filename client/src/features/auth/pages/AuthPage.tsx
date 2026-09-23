@@ -9,7 +9,8 @@ import {
   type AuthMode,
   type AuthValues,
 } from '../utils/validateAuth'
-import hero from '../../../assets/storefront/hero.jpg'
+import { shopApi } from '../../../services/shopApi'
+import { useRemote } from '../../live/hooks'
 import '../../../features/products/styles/catalogue.css'
 import '../styles/auth.css'
 
@@ -27,6 +28,7 @@ export default function AuthPage({
 }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const content = useRemote(shopApi.storefront, 'storefront')
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [values, setValues] = useState<AuthValues>(emptyValues)
   const [errors, setErrors] = useState<AuthErrors>({})
@@ -128,7 +130,7 @@ export default function AuthPage({
         <section className="auth-editorial" aria-label="The StyleFit atelier">
           <img
             className="auth-hero"
-            src={hero}
+            src={content.data?.hero_image}
             alt="Warm sunlight in an atelier, with a tailored terracotta suit"
           />
           <div className="auth-image-shade" />

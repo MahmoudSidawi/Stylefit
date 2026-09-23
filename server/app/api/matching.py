@@ -41,7 +41,7 @@ async def analyze_garment(item_id: UUID, user: Identity = Depends(current_user))
     image = await matching.wardrobe_photo(record, user)
     return await groq_ai.complete(
         'Describe the main garment in this photo. Suggest a plain name, basic clothing category/type, color, style, pattern and description. '
-        'Tops: t-shirts, shirts, hoodies. Bottoms: jeans, pants, shorts, skirts. Dresses: dresses. '
+        'Tops: t-shirts, shirts, hoodies. Bottoms: jeans, pants, shorts, skirts. Dresses: dresses. Shoes: shoes. Hats: hats. '
         'If it is not one of these garments or the photo is unreadable, use confidence low and explain the limitation in description. '
         'Do not guess material composition, brand, measurements, or anything about the wearer. Suggestions are for human review.',
         {'task': 'garment tagging'}, [image], GarmentAnalysis)

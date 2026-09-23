@@ -37,7 +37,7 @@ before(async () => {
     grant usage on schema storage to authenticated;
     grant select, insert, delete on storage.objects to authenticated;
   `)
-  for (const migration of ['202609210001_shop.sql', '202609210002_sample_catalogue.sql', '202609210003_backend_completion.sql', '202609210004_expanded_catalogue.sql', '202609210005_catalogue_search.sql', '202609220001_admin_accounts.sql']) {
+  for (const migration of ['202609210001_shop.sql', '202609210002_sample_catalogue.sql', '202609210003_backend_completion.sql', '202609210004_expanded_catalogue.sql', '202609210005_catalogue_search.sql', '202609220001_admin_accounts.sql', '202609230001_shoes_hats.sql', '202609230002_live_content_looks.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${migration}`, import.meta.url), 'utf8'))
   }
   for (const id of [alice, bob, admin]) {
@@ -51,9 +51,39 @@ before(async () => {
 })
 after(async () => { await db.close() })
 
+test('saved looks are private and storefront content is editable only by admins', async () => {
+  await identity(alice)
+  const { rows: [look] } = await db.query("insert into public.saved_looks(user_id,name,occasion,selection) values ($1,'Weekend outfit','weekend',$2) returning id", [alice, JSON.stringify([{ garmentId: product + ':white', size: 'M' }])])
+  await identity(bob)
+  assert.equal(await scalar('select count(*)::int from public.saved_looks'), 0)
+  await assert.rejects(db.query("insert into public.saved_looks(user_id,name,occasion,selection) values ($1,'Stolen look','weekend',$2)", [alice, '[{"garmentId":"x","size":"M"}]']), /row-level security/)
+  await db.query('delete from public.saved_looks where id = $1', [look.id])
+  await identity(alice)
+  assert.equal(await scalar('select count(*)::int from public.saved_looks'), 1)
+  await db.query('delete from public.saved_looks where id = $1', [look.id])
+  await assert.rejects(db.query("insert into public.site_content values ('test','{}')"), /row-level security/)
+  await identity(admin)
+  await db.query("insert into public.site_content values ('test','{\"title\":\"Database title\"}')")
+  await identity(null, 'anon')
+  assert.equal(await scalar("select data->>'title' from public.site_content where key='test'"), 'Database title')
+  await identity(admin)
+  await db.query("delete from public.site_content where key='test'")
+})
+
+test('shoes and hats save with valid categories and reject mismatched types', async () => {
+  await identity(admin)
+  for (const category of ['shoes', 'hats']) {
+    const { rows: [item] } = await db.query(
+      'insert into public.wardrobe_items(user_id, category_id, clothing_type, name, image_url) values ($1,$2,$2,$2,$3) returning wardrobe_item_id',
+      [admin, category, `${admin}/${category}.jpg`])
+    await assert.rejects(db.query("update public.wardrobe_items set clothing_type = 'jeans' where wardrobe_item_id = $1", [item.wardrobe_item_id]), /check constraint/)
+    await db.query('delete from public.wardrobe_items where wardrobe_item_id = $1', [item.wardrobe_item_id])
+  }
+})
+
 test('anonymous browsing exposes only active products and variants', async () => {
   await identity(null, 'anon')
-  assert.equal(await scalar('select count(*)::int from public.categories'), 3)
+  assert.equal(await scalar('select count(*)::int from public.categories'), 5)
   assert.equal(await scalar('select count(*)::int from public.products'), 24)
   await assert.rejects(db.query('select * from public.users'), /permission denied/)
   await assert.rejects(db.query('select public.place_order($1,$2,$3)', ['Test', '1234567', 'Street 123']), /permission denied/)

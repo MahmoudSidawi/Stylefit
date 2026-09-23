@@ -5,7 +5,7 @@ Original frontend layouts are restored and connected to the backend. For a new S
 
 React + TypeScript frontend, FastAPI backend, and Supabase Auth/PostgreSQL/private storage.
 
-The clothing collection uses **Tops** (T-shirts, shirts, hoodies), **Bottoms** (jeans, pants, shorts, skirts), and **Dresses**. Twenty-four basic sample garments (120 size variants) include local illustrations, standard sizes, and sample USD prices.
+The clothing collection uses **Tops** (T-shirts, shirts, hoodies), **Bottoms** (jeans, pants, shorts, skirts), **Dresses**, **Shoes**, and **Hats**. The sample garments include clothing photographs, standard sizes, and sample USD prices.
 
 The backend provides catalogue browsing, authenticated profiles, carts, wishlists, wardrobe records/images, transactional cash-on-delivery checkout, order history, and protected admin product/order operations. All active shopping, wardrobe, account, and admin screens use the APIs. Groq powers outfit matching and wardrobe photo tagging, with ownership checks, validated results, optional profile input, and per-account rate limits.
 
@@ -32,7 +32,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host localhost --port 8000
 ```
 
-Existing installations can reuse their `.venv`. The frontend opens at http://localhost:5173 and API documentation at http://localhost:8000/docs. Health and sample catalogue endpoints run without cloud credentials. Persistent operations require the Supabase configuration and migrations in [the setup guide](docs/backend.md).
+Existing installations can reuse their `.venv`. The frontend opens at http://localhost:5173 and API documentation at http://localhost:8000/docs. Only the health endpoint runs without cloud credentials; the catalogue requires Supabase. Persistent operations require the Supabase configuration and migrations in [the setup guide](docs/backend.md).
 
 Copy `.env.example` to `.env` in each app only when setting up for the first time; avoid overwriting existing values. Public project URL/key belong in both configurations. No privileged Supabase secret is required. Real `.env` files are ignored by Git.
 
@@ -66,3 +66,7 @@ npm test
 ```
 
 The original [BRD](docs/StyleFit_BRD.docx) and [ERD](docs/StyleFit_ERD.drawio) are preserved. The [backend guide](docs/backend.md) records the implementation mapping: Supabase owns passwords, profiles use the Auth UUID, and products have a validated clothing subtype. Earlier handoff documents describe their original implementation stage.
+
+See [demo customer and photo setup](docs/demo-account.md) for the prepared account, sample order and outfit rules.
+
+All runtime business data comes from Supabase. Apply `202609230002_live_content_looks.sql` to existing projects, then run `server/scripts/seed_storefront.py` to import homepage content. Saved looks now sync to the account. No sample catalogue fallback or browser-only business data remains.

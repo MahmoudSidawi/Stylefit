@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 import warnings
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, Response
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, UnidentifiedImageError  # type: ignore[import-not-found]
 
 from app.core.auth import Identity, current_user, admin_user
 from app.core.config import settings

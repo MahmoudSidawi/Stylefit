@@ -48,6 +48,9 @@ export default function CataloguePage({
   const [announcement, setAnnouncement] = useState(location.state?.message ?? '')
   const { session } = useSession()
   const catalogue = useRemote(loadCatalogue, 'catalogue')
+  const categoryData = useRemote(shopApi.categories, 'categories')
+  const content = useRemote(shopApi.storefront, 'storefront', !allClothes)
+  const categories = [{ id: 'all' as const, label: 'All Clothes' }, ...(categoryData.data ?? []).map((row) => ({ id: row.category_id, label: row.name }))]
   const products = (catalogue.data?.items ?? []).map(toProduct)
   const saved = useRemote(shopApi.wishlist, session?.user.id ?? 'guest', !!session)
   const cart = useRemote(shopApi.cart, session?.user.id ?? 'guest', !!session)
@@ -80,9 +83,7 @@ export default function CataloguePage({
         ? a.price - b.price
         : sort === 'price-desc'
           ? b.price - a.price
-          : sort === 'match'
-            ? b.match - a.match
-            : 0,
+          : 0,
     )
 
   useEffect(() => {
@@ -139,7 +140,7 @@ export default function CataloguePage({
                 silhouettes
               </span>
               <span>
-                <Icon name="sparkles" size={13} /> {catalogue.data?.mode === 'sample' ? 'Sample collection' : 'The StyleFit collection'}
+                <Icon name="sparkles" size={13} /> The StyleFit collection
               </span>
             </div>
           </div>
@@ -152,12 +153,12 @@ export default function CataloguePage({
                   <h1>All Clothes</h1>
                 </div>
                 <span className="clothes-edition">
-                  {products.length} pieces / {catalogue.data?.mode === 'sample' ? 'Sample collection' : 'The essentials edit'}
+                  {products.length} pieces / The essentials edit
                 </span>
               </div>
             </div>
           ) : (
-            <CollectionHero count={products.length} />
+            content.data && <CollectionHero count={products.length} content={content.data} />
           )}
           {!allClothes && (
             <>
@@ -192,7 +193,7 @@ export default function CataloguePage({
               </section>
             </>
           )}
-          <Notice {...catalogue} /><Notice {...action} /><Notice error={saved.error || cart.error} />
+          <Notice {...catalogue} /><Notice {...categoryData} /><Notice {...content} /><Notice {...action} /><Notice error={saved.error || cart.error} />
           <section
             id="collection"
             className={`collection-section${allClothes ? ' clothes-layout' : ''}`}
@@ -200,6 +201,7 @@ export default function CataloguePage({
           >
             {allClothes && (
               <CatalogueFilters
+                categories={categories}
                 products={products}
                 category={category}
                 setCategory={setCategory}
@@ -230,7 +232,7 @@ export default function CataloguePage({
                 <div className="best-sellers-heading">
                   <div>
                     <p className="overline">The essentials edit</p>
-                    <h2>Best Sellers</h2>
+                    <h2>Featured Pieces</h2>
                     <p>Four standout pieces from our essentials collection.</p>
                   </div>
                   <Link
@@ -294,7 +296,7 @@ export default function CataloguePage({
               )}
             </div>
           </section>
-          {!allClothes && <Editorial />}
+          {!allClothes && content.data && <Editorial content={content.data} />}
         </div>
       </main>
       <StorefrontFooter />

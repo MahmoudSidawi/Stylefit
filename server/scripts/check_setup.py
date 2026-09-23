@@ -14,7 +14,7 @@ from app.services import database, groq_ai
 
 async def check(live: bool):
     report = {'supabase_configured': database.configured(), 'groq_configured': groq_ai.configured(),
-              'groq_model': settings.groq_model, 'sample_catalogue_enabled': settings.sample_catalogue_enabled}
+              'groq_model': settings.groq_model}
     if live:
         if database.configured():
             try:

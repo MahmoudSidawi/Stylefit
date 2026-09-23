@@ -178,20 +178,15 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
           </>
         )}
       </div>
-      {saved.storageError && (
-        <p className="storage-notice" role="alert">
-          Your browser couldn’t save these changes. They’ll last for this visit
-          only.
-        </p>
-      )}
+      <Notice error={saved.error} loading={saved.loading} />
       {dialog === 'save' && (
         <SaveLookDialog
           initialName={outfit.name}
-          atLimit={saved.looks.length >= 20}
+          busy={saved.busy}
           onClose={() => setDialog(null)}
-          onSave={(name) => {
+          onSave={async (name) => {
             if (
-              saved.save({
+              await saved.save({
                 name,
                 selection: outfit.selection.map((entry) => ({ ...entry })),
                 occasion: outfit.occasion,

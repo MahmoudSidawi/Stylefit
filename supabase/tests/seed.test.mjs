@@ -26,7 +26,7 @@ test('standalone setup and repeatable seed create the catalogue without resettin
     const seed = await readFile(new URL('../seed.sql', import.meta.url), 'utf8')
     await db.exec(seed)
     const counts = await db.query('select (select count(*)::int from public.categories) as categories, (select count(*)::int from public.products) as products, (select count(*)::int from public.product_variants) as variants')
-    assert.deepEqual(counts.rows[0], { categories: 3, products: 24, variants: 120 })
+    assert.deepEqual(counts.rows[0], { categories: 5, products: 24, variants: 120 })
     const { rows: [variant] } = await db.query('select variant_id from public.product_variants limit 1')
     await db.query('update public.product_variants set stock_quantity = 7, price = 31.50 where variant_id = $1', [variant.variant_id])
     await db.exec(seed)

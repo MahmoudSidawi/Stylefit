@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     groq_api_key: SecretStr | None = None
     groq_model: str = 'qwen/qwen3.8-27b'
     groq_timeout_seconds: float = Field(45, gt=0, le=120)
-    sample_catalogue_enabled: bool = True
 
 
 settings = Settings()

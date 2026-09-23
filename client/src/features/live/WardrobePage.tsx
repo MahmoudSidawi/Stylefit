@@ -71,7 +71,7 @@ export default function LiveWardrobe() {
       <button className="button button-primary" disabled={action.busy}>{action.busy ? 'Saving…' : 'Save garment'}</button>
       {editing && <button type="button" className="button button-surface" onClick={() => { setEditing(null); setDraft(empty); setFile(null); setFormKey((key) => key + 1) }}>Cancel edit</button>}
     </form>
-    <div className="live-controls"><label>Category<select value={filter} onChange={(e) => setFilter(e.target.value)}><option value="all">All</option><option value="tops">Tops</option><option value="bottoms">Bottoms</option><option value="dresses">Dresses</option></select></label><Link to="/matcher">Match an outfit</Link></div>
+    <div className="live-controls"><label>Category<select value={filter} onChange={(e) => setFilter(e.target.value)}><option value="all">All</option><option value="tops">Tops</option><option value="bottoms">Bottoms</option><option value="dresses">Dresses</option><option value="shoes">Shoes</option><option value="hats">Hats</option></select></label><Link to="/matcher">Match an outfit</Link></div>
     <div className="live-grid">{wardrobe.data?.filter((item) => filter === 'all' || item.category_id === filter).map((item) => <WardrobeCard key={item.wardrobe_item_id} item={item} onEdit={edit} />)}</div>
     {wardrobe.data?.length === 0 && <p>Your wardrobe is empty. Add your first garment above.</p>}
   </LiveLayout>

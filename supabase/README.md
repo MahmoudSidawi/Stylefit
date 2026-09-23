@@ -8,7 +8,7 @@ For your empty Supabase project:
 
 `setup.sql` contains the schema, RLS, storage policies, and functions from migrations 001, 003, and 005. It is an alternative to running migrations, not an extra migration. Do not run it on an already migrated database. If you already applied the original five migrations, apply the admin accounts migration below; `seed.sql` is optional (and your sample inventory is already present).
 
-The seed creates 3 categories, 24 products, and 120 variants (XS through XL), with sample USD prices and 20 units per new variant. Repeating it does not reset stock or prices or create duplicates. It includes no user accounts or orders. Product illustrations are served from the app's `/clothes/` folder. Sign up normally to create an account.
+Setup creates 5 categories. The seed creates 24 products, and 120 variants (XS through XL), with sample USD prices and 20 units per new variant. Repeating it does not reset stock or prices or create duplicates. It includes no user accounts or orders. Representative product photos are served from the app's `/clothes/photos/` folder. Sign up normally to create an account.
 
 Verify in SQL Editor:
 
@@ -44,3 +44,13 @@ Checkout supports cash on delivery only. No online card payment provider is inte
 
 
 Admin user listing and name edits verify the caller's admin role first, then use the server-only `SUPABASE_SECRET_KEY` for the limited account query. This supports existing databases before the optional admin profile policies are applied. The key must never be added to client environment variables. Other store requests continue to use the caller's RLS identity.
+# Shoes, hats, and demo customer
+
+Existing projects: run `migrations/202609230001_shoes_hats.sql` in SQL Editor.
+It preserves current data and adds the two supported categories. Do not rerun
+`setup.sql` on an existing project. See [demo setup](../docs/demo-account.md) for
+the photo catalogue and sample customer.
+
+## Live homepage and saved outfits
+
+Run `migrations/202609230002_live_content_looks.sql` on existing projects. Then run `server/scripts/seed_storefront.py` using the configured server environment. Runtime catalogue data requires Supabase; sample files are used only by explicit import scripts.

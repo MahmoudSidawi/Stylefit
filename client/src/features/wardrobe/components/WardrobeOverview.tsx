@@ -1,3 +1,5 @@
+import { shopApi } from '../../../services/shopApi'
+import { useRemote } from '../../live/hooks'
 import { Link } from 'react-router-dom'
 import { Icon } from '../../../components/ui/Icon'
 import { kinds } from '../data/options'
@@ -12,8 +14,9 @@ export function WardrobeOverview({
   onAdd: () => void
   onDrop: (files: FileList) => void
 }) {
-  const groups = [{ id: 'tops', label: 'Tops' }, { id: 'bottoms', label: 'Bottoms' }, { id: 'dresses', label: 'Dresses' }]
-  const localCount = items.filter((item) => !item.sample).length
+  const categories = useRemote(shopApi.categories, 'categories')
+  const groups = (categories.data ?? []).map((row) => ({ id: row.category_id, label: row.name }))
+  const localCount = items.length
   return (
     <>
       <section className="wardrobe-stats" aria-label="Wardrobe composition">

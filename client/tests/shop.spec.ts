@@ -13,10 +13,40 @@ const analysis = { score: 86, explanation: 'A comfortable everyday outfit with c
   styles: dimension, patterns: dimension, clothing_types: dimension, occasion: dimension, suggestions: ['Try a relaxed top.'],
   provider: 'groq', model: 'test-model', used_profile: false, images_analyzed: 0, disclaimer: 'A subjective styling estimate, not a guarantee of garment fit.' }
 
+test('dresses and jeans replace each other while shoes and hats remain selected', async ({ page }) => {
+  await setup(page)
+  const extras = ['shoes', 'hats'].map((category, i) => ({
+    ...products[0], product_id: `00000000-0000-4000-8000-00000000001${i}`,
+    name: i === 0 ? 'Running Shoes' : 'Baseball Cap', category_id: category, clothing_type: category,
+    product_variants: [{ ...products[0].product_variants[0],
+      variant_id: `00000000-0000-4000-9000-00000000001${i}`, size: i === 0 ? '40' : 'One size',
+      image_url: `/clothes/photos/${category}.jpg` }],
+  }))
+  await page.route('**/api/products?**', (route) => route.fulfill({ json: {
+    items: [...products, ...extras], total: 5, mode: 'live', limit: 100, offset: 0,
+  } }))
+  await page.goto('/matcher')
+  for (const name of ['Everyday Dress', 'Running Shoes', 'Baseball Cap']) {
+    await page.getByRole('button', { name: `Add ${name} to canvas`, exact: true }).click()
+  }
+  const selected = page.getByLabel('Selected clothes', { exact: true })
+  await expect(selected.locator('article')).toHaveCount(3)
+  await page.getByRole('button', { name: 'Add Straight Jeans to canvas', exact: true }).click()
+  await expect(selected.getByRole('heading', { name: 'Everyday Dress' })).toHaveCount(0)
+  await expect(selected.getByRole('heading', { name: 'Straight Jeans' })).toBeVisible()
+  await expect(selected.locator('article')).toHaveCount(3)
+  await page.getByRole('button', { name: 'Add Everyday Dress to canvas', exact: true }).click()
+  await expect(selected.getByRole('heading', { name: 'Straight Jeans' })).toHaveCount(0)
+  await expect(selected.getByRole('heading', { name: 'Everyday Dress' })).toBeVisible()
+  await expect(page.locator('[data-garment-slot="shoes"]')).toBeVisible()
+  await expect(page.locator('[data-garment-slot="hat"]')).toBeVisible()
+})
+
 async function setup(page: Page, signedIn = true) {
   const calls: { path: string; body: Record<string, unknown> | null }[] = []
   let quantity = 0
   let ordered = false
+  let looks: Record<string, unknown>[] = []
   if (signedIn) await page.addInitScript(({ userId }) => {
     const user = { id: userId, email: 'test@example.test', aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() }
     const expires = Math.floor(Date.now() / 1000) + 3600
@@ -30,10 +60,15 @@ async function setup(page: Page, signedIn = true) {
     const body = route.request().postDataJSON() as Record<string, unknown> | null
     calls.push({ path, body })
     let response: unknown = null
-    if (path === '/api/products') {
+    if (path === '/api/categories') response = ['tops', 'bottoms', 'dresses', 'shoes', 'hats'].map((id) => ({ category_id: id, name: id[0].toUpperCase() + id.slice(1), clothing_types: id === 'tops' ? ['t-shirts', 'shirts', 'hoodies'] : id === 'bottoms' ? ['jeans', 'pants', 'shorts', 'skirts'] : [id] }))
+    else if (path === '/api/content/storefront') response = { title: 'Spring Architecture', subtitle: 'Collection', description: 'The current collection.', hero_image: '/clothes/photos/dresses.jpg', hero_alt: 'Dress', detail_image: '/clothes/photos/shirts.jpg', detail_alt: 'Shirt', editorial_title: 'The StyleFit Edit', editorial_description: 'Clothing for everyday style.', curator_image: '/clothes/photos/hats.jpg', atelier_image: '/clothes/photos/jeans.jpg', tailoring_image: '/clothes/photos/shirts.jpg' }
+    else if (path === '/api/looks' && method === 'POST') { response = { ...body, id: 'look-1' }; looks.push(response as Record<string, unknown>) }
+    else if (path === '/api/looks') response = looks
+    else if (path.startsWith('/api/looks/') && method === 'DELETE') { looks = looks.filter((look) => look.id !== path.split('/').at(-1)); return route.fulfill({ status: 204 }) }
+    else if (path === '/api/products') {
       const items = products.filter((p) => !url.searchParams.get('category') || p.category_id === url.searchParams.get('category'))
       response = { items, total: items.length, mode: 'live', limit: 100, offset: 0 }
-    } else if (path === '/api/me') response = { user_id: userId, name: 'Test Customer', email: 'test@example.test', role: 'customer', height_cm: null, weight_kg: null, body_shape: null, clothing_size: null, skin_tone: null }
+    } else if (path === '/api/me') { const profile = { user_id: userId, name: 'Test Customer', email: 'test@example.test', role: 'customer', height_cm: null, weight_kg: null, body_shape: null, clothing_size: null, skin_tone: null }; response = method === 'PATCH' ? [{ ...profile, ...body }] : profile }
     else if (path === '/api/cart' && method === 'GET') response = quantity ? [{ cart_item_id: 'cart-1', variant_id: products[0].product_variants[0].variant_id, quantity, product_variants: { ...products[0].product_variants[0], products: products[0] } }] : []
     else if (path === '/api/cart/add') quantity += Number(body?.quantity)
     else if (path === '/api/cart' && method === 'PUT') quantity = Number(body?.quantity)
@@ -60,6 +95,24 @@ test('guest catalogue filters categories and private pages require sign-in', asy
   await page.goto('/clothes')
   await expect(page.locator('.product-card')).toHaveCount(3)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})
+
+test('saved outfits persist through the API after reloading and can be deleted', async ({ page }) => {
+  const calls = await setup(page)
+  await page.goto('/matcher')
+  await page.getByRole('button', { name: 'Add Cotton T-shirt to canvas', exact: true }).click()
+  await page.getByRole('button', { name: 'Add Straight Jeans to canvas', exact: true }).click()
+  await page.getByRole('button', { name: 'Save Look', exact: true }).click()
+  await page.getByLabel('Look name', { exact: true }).fill('My saved weekend outfit')
+  await page.getByRole('button', { name: 'Save to my account', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  expect(calls.some((call) => call.path === '/api/looks' && call.body?.name === 'My saved weekend outfit')).toBe(true)
+  await page.reload()
+  await page.getByRole('button', { name: /Saved Looks/ }).click()
+  await expect(page.getByRole('heading', { name: 'My saved weekend outfit' })).toBeVisible()
+  await page.getByRole('button', { name: 'Delete My saved weekend outfit' }).click()
+  await expect(page.getByRole('heading', { name: 'My saved weekend outfit' })).toHaveCount(0)
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((key) => key.includes('looks')))).toEqual([])
 })
 
 test('authenticated cart and cash-on-delivery checkout call the backend', async ({ page }) => {
@@ -316,6 +369,11 @@ test('admin tables support product edits, creation and responsive navigation', a
   await page.getByRole('button', { name: 'Add product', exact: true }).click()
   await page.getByRole('dialog').getByLabel('Name', { exact: true }).fill('New Cotton Shirt')
   await page.getByRole('dialog').getByLabel('Description', { exact: true }).fill('An everyday shirt')
+  await page.getByRole('dialog').getByLabel('Sizes separated by commas').fill('S,M,L')
+  await page.getByRole('dialog').getByLabel('Color', { exact: true }).fill('White')
+  await page.getByRole('dialog').getByLabel('Price', { exact: true }).fill('35')
+  await page.getByRole('dialog').getByLabel('Stock per size', { exact: true }).fill('10')
+  await page.getByRole('dialog').getByLabel('Image URL', { exact: true }).fill('https://example.com/shirt.jpg')
   await page.getByRole('button', { name: 'Create product', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.getByLabel('Search products').fill('New Cotton')
@@ -349,6 +407,146 @@ test('profile and orders share the account sidebar and page style', async ({ pag
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.getByRole('link', { name: 'Personal details', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'My account', exact: true })).toBeVisible()
+})
+
+test('profile loads once, does not wait for the bag, and is reused between account pages', async ({ page }) => {
+  const calls = await setup(page)
+  let releaseBag!: () => void
+  const bagReady = new Promise<void>((resolve) => { releaseBag = resolve })
+  await page.route('**/api/cart', async (route) => {
+    await bagReady
+    await route.fulfill({ json: [] })
+  })
+  try {
+    await page.goto('/profile')
+    await expect(page.getByLabel('Your name', { exact: true })).toHaveValue('Test Customer')
+    expect(calls.filter((call) => call.path === '/api/me')).toHaveLength(1)
+    await page.getByRole('navigation', { name: 'Account navigation' }).getByRole('link', { name: 'My orders' }).click()
+    await expect(page.locator('.profile-identity h2')).toHaveText('Test Customer')
+    await page.getByRole('link', { name: 'Personal details', exact: true }).click()
+    await expect(page.getByLabel('Your name', { exact: true })).toHaveValue('Test Customer')
+    expect(calls.filter((call) => call.path === '/api/me')).toHaveLength(1)
+  } finally { releaseBag() }
+})
+
+test('profile errors are retryable instead of leaving a permanent loading message', async ({ page }) => {
+  await setup(page)
+  let fail = true
+  await page.route('**/api/me', (route) => fail
+    ? route.fulfill({ status: 503, json: { detail: 'Profile temporarily unavailable' } })
+    : route.fallback())
+  await page.goto('/profile')
+  await expect(page.getByText('Profile temporarily unavailable', { exact: false })).toBeVisible()
+  await expect(page.getByText('Loading your profile...', { exact: true })).toHaveCount(0)
+  fail = false
+  await page.getByRole('button', { name: 'Retry profile', exact: true }).click()
+  await expect(page.getByLabel('Your name', { exact: true })).toHaveValue('Test Customer')
+})
+
+for (const accountPage of [
+  { path: '/orders', endpoint: '/api/orders', retry: 'Try again', empty: 'Your next favorite is waiting.' },
+  { path: '/wishlist', endpoint: '/api/wishlist', retry: 'Try again', empty: 'A place for your favorites.' },
+  { path: '/wardrobe', endpoint: '/api/wardrobe', retry: 'Retry wardrobe', empty: 'Your wardrobe, waiting to happen.' },
+]) {
+  test(`${accountPage.path} shows a recoverable error rather than an empty account`, async ({ page }) => {
+    await setup(page)
+    let fail = true
+    await page.route('**' + accountPage.endpoint, (route) => fail
+      ? route.fulfill({ status: 503, json: { detail: 'Account data temporarily unavailable' } }) : route.fallback())
+    await page.goto(accountPage.path)
+    await expect(page.getByText('Account data temporarily unavailable', { exact: false })).toBeVisible()
+    await expect(page.getByRole('heading', { name: accountPage.empty })).toHaveCount(0)
+    fail = false
+    await page.getByRole('button', { name: accountPage.retry, exact: true }).click()
+    await expect(page.getByRole('heading', { name: accountPage.empty })).toBeVisible()
+  })
+}
+
+test('order refresh failures preserve already loaded purchases', async ({ page }) => {
+  await setup(page)
+  let fail = false
+  await page.route('**/api/orders', (route) => fail
+    ? route.fulfill({ status: 503, json: { detail: 'Unable to refresh orders' } })
+    : route.fulfill({ json: [{ order_id: 'existing-order', total_amount: 25, status: 'placed', is_paid: false, created_at: '2026-09-23T00:00:00Z', order_items: [] }] }))
+  await page.goto('/orders')
+  await expect(page.getByRole('heading', { name: 'Order existing-order' })).toBeVisible()
+  fail = true
+  await page.evaluate(() => window.dispatchEvent(new Event('stylefit:changed')))
+  await expect(page.getByText('Unable to refresh orders', { exact: false })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Order existing-order' })).toBeVisible()
+})
+
+test('wardrobe details and healthy photos appear without waiting for a slow photo', async ({ page }) => {
+  await setup(page)
+  const rows = ['Slow shirt', 'Ready jeans'].map((name, index) => ({ wardrobe_item_id: `photo-${index}`, name,
+    category_id: index ? 'bottoms' : 'tops', clothing_type: index ? 'jeans' : 'shirts', image_url: `${userId}/${index}.jpg`, color: 'blue', size: 'M' }))
+  await page.route('**/api/wardrobe', (route) => route.fulfill({ json: rows }))
+  let release!: () => void
+  const pending = new Promise<void>((resolve) => { release = resolve })
+  let failPhoto = true
+  await page.route('**/api/wardrobe/*/image', async (route) => {
+    if (route.request().url().includes('photo-0') && failPhoto) {
+      await pending
+      return route.fulfill({ status: 503, json: { detail: 'Photo unavailable' } })
+    }
+    return route.fulfill({ json: { url: '/clothes/photos/jeans.jpg', expires_in: 300 } })
+  })
+  try {
+    await page.goto('/wardrobe')
+    await expect(page.getByRole('heading', { name: 'Slow shirt', exact: true })).toBeVisible()
+    await expect(page.getByRole('img', { name: 'Ready jeans', exact: true })).toBeVisible()
+    await expect(page.getByText('Loading photo...', { exact: true })).toBeVisible()
+    release()
+    await expect(page.getByRole('button', { name: 'Retry photos', exact: true })).toBeVisible()
+    failPhoto = false
+    await page.getByRole('button', { name: 'Retry photos', exact: true }).click()
+    await expect(page.getByRole('img', { name: 'Slow shirt', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Retry photos', exact: true })).toHaveCount(0)
+  } finally { release() }
+})
+
+test('profile refreshes expired Supabase data instead of initializing the form with old values', async ({ page }) => {
+  await setup(page)
+  await page.clock.install()
+  let name = 'Original Customer'
+  await page.route('**/api/me', (route) => route.fulfill({ json: { user_id: userId, name, email: 'test@example.test', role: 'customer', height_cm: null, weight_kg: null, body_shape: null, clothing_size: null, skin_tone: null } }))
+  await page.goto('/profile')
+  await expect(page.getByLabel('Your name', { exact: true })).toHaveValue(name)
+  await page.getByRole('navigation', { name: 'Account navigation' }).getByRole('link', { name: 'My orders' }).click()
+  await expect(page.getByText('Your orders will appear here after checkout.')).toBeVisible()
+  name = 'Updated in Supabase'
+  await page.clock.fastForward(31_000)
+  await page.getByRole('link', { name: 'Personal details', exact: true }).click()
+  await expect(page.getByLabel('Your name', { exact: true })).toHaveValue(name)
+})
+
+test('favorites share the account design and support shopping and removal on mobile', async ({ page }) => {
+  const calls = await setup(page)
+  let favorites = products.slice(0, 2).map((product) => ({ wishlist_item_id: product.product_id, product_id: product.product_id, products: product }))
+  await page.route('**/api/wishlist**', (route) => {
+    if (route.request().method() === 'DELETE') {
+      const id = new URL(route.request().url()).pathname.split('/').at(-1)
+      favorites = favorites.filter((row) => row.product_id !== id)
+      return route.fulfill({ status: 204 })
+    }
+    return route.fulfill({ json: favorites })
+  })
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('/wishlist')
+  await expect(page.getByRole('heading', { name: 'Saved favorites', exact: true })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Account navigation' }).getByRole('link', { name: 'Saved favorites' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.locator('.account-favorites-grid .product-card')).toHaveCount(2)
+  await page.getByRole('button', { name: 'Add to Bag', exact: true }).first().click()
+  await expect(page.getByText('Added to your bag.', { exact: true })).toBeVisible()
+  expect(calls.some((call) => call.path === '/api/cart/add')).toBe(true)
+  await page.screenshot({ path: '../docs/previews/account-favorites-desktop.png', fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({ path: '../docs/previews/account-favorites-mobile.png', fullPage: true })
+  await page.getByRole('button', { name: 'Unsave Cotton T-shirt', exact: true }).click()
+  await expect(page.locator('.account-favorites-grid .product-card')).toHaveCount(1)
+  await page.getByRole('button', { name: 'Unsave Straight Jeans', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'A place for your favorites.' })).toBeVisible()
 })
 
 

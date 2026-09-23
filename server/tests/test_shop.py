@@ -33,20 +33,47 @@ def mock_db(monkeypatch, responses):
     return mock
 
 
-def test_basic_catalogue_filters_pagination(client):
-    assert [c['name'] for c in client.get('/api/categories').json()] == ['Tops', 'Bottoms', 'Dresses']
-    result = client.get('/api/products?category=tops').json()
-    assert result['mode'] == 'sample'
-    assert {p['clothing_type'] for p in result['items']} == {'t-shirts', 'shirts', 'hoodies'}
-    assert len(client.get('/api/products?category=bottoms').json()['items']) == 12
-    assert len(client.get('/api/products?category=dresses').json()['items']) == 3
-    result = client.get('/api/products?q=SHIRT&limit=1&offset=1').json()
-    assert len(result['items']) == 1
-    product = result['items'][0]
-    assert client.get('/api/products/' + product['product_id']).json() == product
-    assert client.get('/api/products?category=shoes').status_code == 422
+def test_catalogue_requires_database_instead_of_sample_fallback(client):
+    for path in ['/api/categories', '/api/products', '/api/products/' + str(uuid4()), '/api/content/storefront']:
+        assert client.get(path).status_code == 503
+    assert client.get('/api/products?category=invalid').status_code == 422
     assert client.get('/api/products?limit=101').status_code == 422
-    assert client.get('/api/products/' + str(uuid4())).status_code == 404
+
+
+def test_catalogue_passes_filters_to_database(client, monkeypatch):
+    db = mock_db(monkeypatch, [{'items': [], 'total': 0}])
+    result = client.get('/api/products?category=shoes&q=runner&limit=5&offset=10')
+    assert result.status_code == 200
+    assert result.json()['mode'] == 'live'
+    assert db.call_args.kwargs['body']['p_category'] == 'shoes'
+    assert db.call_args.kwargs['body']['p_offset'] == 10
+    assert db.call_args.kwargs['body']['p_query'] == 'runner'
+
+
+def test_saved_look_checks_ownership_and_persists(client, monkeypatch):
+    wardrobe_id = str(uuid4())
+    payload = {'name': 'Weekend outfit', 'occasion': 'weekend', 'selection': [{'garmentId': wardrobe_id, 'size': 'M'}]}
+    db = mock_db(monkeypatch, [{'id': USER}, [{'category_id': 'tops'}], [{'id': str(uuid4()), **payload}]])
+    response = client.post('/api/looks', headers=AUTH, json=payload)
+    assert response.status_code == 201
+    assert db.call_args_list[1].kwargs['params']['user_id'] == f'eq.{USER}'
+    assert db.call_args.kwargs['body']['user_id'] == USER
+    assert db.call_args.kwargs['body']['selection'] == payload['selection']
+
+
+def test_saved_look_cannot_reference_another_users_garment(client, monkeypatch):
+    db = mock_db(monkeypatch, [{'id': USER}, []])
+    response = client.post('/api/looks', headers=AUTH, json={'name': 'Unavailable look', 'occasion': 'weekend',
+        'selection': [{'garmentId': str(uuid4()), 'size': 'M'}]})
+    assert response.status_code == 404
+    assert db.call_count == 2
+
+
+def test_saved_look_database_failure_is_not_reported_as_saved(client, monkeypatch):
+    from fastapi import HTTPException
+    mock_db(monkeypatch, [{'id': USER}, [{'category_id': 'tops'}], HTTPException(503, 'Database unavailable')])
+    assert client.post('/api/looks', headers=AUTH, json={'name': 'Weekend outfit', 'occasion': 'weekend',
+        'selection': [{'garmentId': str(uuid4()), 'size': 'M'}]}).status_code == 503
 
 
 @pytest.mark.parametrize('path', ['/api/me', '/api/cart', '/api/wishlist', '/api/wardrobe', '/api/orders', '/api/admin/orders'])
@@ -182,13 +209,6 @@ def test_private_image_not_found_does_not_sign(client, monkeypatch):
     assert client.get(f'/api/wardrobe/{uuid4()}/image', headers=AUTH).status_code == 404
     assert mock.call_count == 2
 
-
-def test_catalogue_fixture_agrees_with_frontend():
-    import json
-    from pathlib import Path
-    root = Path(__file__).resolve().parents[2]
-    assert json.loads((root / 'client/src/features/products/data/catalogue.json').read_text()) == json.loads(
-        (root / 'server/app/data/catalogue.json').read_text())
 
 
 @pytest.mark.parametrize('path', ['/api/admin/me', '/api/admin/users'])

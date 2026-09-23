@@ -11,6 +11,8 @@ export const kinds: Record<
   'pants': { label: 'Pants', category: 'bottoms' },
   'shorts': { label: 'Shorts', category: 'bottoms' },
   'skirts': { label: 'Skirts', category: 'bottoms' },
+  'shoes': { label: 'Shoes', category: 'shoes' },
+  'hats': { label: 'Hats', category: 'hats' },
   'dresses': { label: 'Dresses', category: 'dresses' },
 
 }
@@ -18,6 +20,8 @@ export const colors: Record<
   GarmentColor,
   { label: string; hex: string; tone: 'warm' | 'cool' | 'neutral' }
 > = {
+  red: { label: 'Red', hex: '#cf2635', tone: 'warm' },
+  grey: { label: 'Grey', hex: '#a0a0a0', tone: 'neutral' },
   cream: { label: 'Warm Cream', hex: '#e9deca', tone: 'neutral' },
   charcoal: { label: 'Deep Charcoal', hex: '#454343', tone: 'neutral' },
   white: { label: 'Crisp White', hex: '#f7f5ef', tone: 'neutral' },
@@ -29,12 +33,6 @@ export const colors: Record<
   sage: { label: 'Sage Green', hex: '#9b9e82', tone: 'cool' },
   blue: { label: 'Sky Blue', hex: '#9bbacc', tone: 'cool' },
 }
-export const wardrobeCategories: { id: WardrobeCategory; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'tops', label: 'Tops' },
-  { id: 'bottoms', label: 'Bottoms' },
-  { id: 'dresses', label: 'Dresses' },
-]
 export function isKind(value: unknown): value is GarmentKind {
   return typeof value === 'string' && Object.hasOwn(kinds, value)
 }

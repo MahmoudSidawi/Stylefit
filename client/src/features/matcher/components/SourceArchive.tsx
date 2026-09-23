@@ -1,3 +1,5 @@
+import { shopApi, type ClothingCategory } from '../../../services/shopApi'
+import { useRemote } from '../../live/hooks'
 import { useRef } from 'react'
 import { Icon } from '../../../components/ui/Icon'
 import type { ArchiveSource, Garment, Selection, Slot } from '../types'
@@ -14,12 +16,7 @@ type Props = {
   selection: Selection[]
   onStage: (garment: Garment) => void
 }
-const filters: { id: ArchiveFilter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'core', label: 'Tops' },
-  { id: 'anchor', label: 'Bottoms' },
-  { id: 'dress', label: 'Dresses' },
-]
+const categorySlots: Record<ClothingCategory, Slot> = { tops: 'core', bottoms: 'anchor', dresses: 'dress', shoes: 'shoes', hats: 'hat' }
 
 export function SourceArchive({
   garments,
@@ -32,6 +29,8 @@ export function SourceArchive({
   selection,
   onStage,
 }: Props) {
+  const categories = useRemote(shopApi.categories, 'categories')
+  const filters: { id: ArchiveFilter; label: string }[] = [{ id: 'all', label: 'All' }, ...(categories.data ?? []).map((row) => ({ id: categorySlots[row.category_id], label: row.name }))]
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const visible = garments.filter(
     (item) =>
@@ -117,9 +116,9 @@ export function SourceArchive({
               key={item.id}
             >
               <div className="archive-thumbnail">
-                <img src={item.image} alt={item.name} loading="lazy" />
+                <img src={item.image || undefined} alt={item.name} loading="lazy" />
                 {item.source === 'wardrobe' && (
-                  <span>{item.sample ? 'Sample' : 'Owned'}</span>
+                  <span>Owned</span>
                 )}
               </div>
               <div className="archive-item-copy">
@@ -128,9 +127,7 @@ export function SourceArchive({
                 <p>
                   {item.source === 'store'
                     ? `$${item.price}`
-                    : item.sample
-                      ? 'Sample wardrobe piece'
-                      : 'From your wardrobe'}
+                    : 'From your wardrobe'}
                 </p>
               </div>
               <button
@@ -167,7 +164,8 @@ export function SourceArchive({
       </div>
       <p className="archive-help">
         <Icon name="info" size={13} /> One piece per category. Adding another
-        piece in the same category replaces the current one.
+        piece in the same category replaces the current one. Dresses and bottoms
+        replace each other and cannot be worn together in an outfit.
       </p>
       {source === 'wardrobe' && (
         <p className="archive-demo-note">

@@ -1,6 +1,13 @@
+import type { SavedLook } from '../features/matcher/types'
 import { apiRequest } from './api'
 
-export type ClothingCategory = 'tops' | 'bottoms' | 'dresses'
+export type ClothingCategory = 'tops' | 'bottoms' | 'dresses' | 'shoes' | 'hats'
+export type StorefrontContent = {
+  title: string; subtitle: string; description: string
+  hero_image: string; hero_alt: string; detail_image: string; detail_alt: string
+  editorial_title: string; editorial_description: string
+  curator_image: string; atelier_image: string; tailoring_image: string
+}
 export type Variant = {
   variant_id: string; product_id?: string; size: string; color: string
   price: number; stock_quantity: number; image_url: string; is_active: boolean
@@ -42,9 +49,13 @@ const json = (method: string, body: unknown): RequestInit => ({ method, body: JS
 const id = encodeURIComponent
 
 export const shopApi = {
+  storefront: () => apiRequest<StorefrontContent>('/api/content/storefront', {}, false),
+  looks: () => apiRequest<SavedLook[]>('/api/looks'),
+  saveLook: (look: Omit<SavedLook, 'id'>) => apiRequest<SavedLook>('/api/looks', json('POST', look)),
+  deleteLook: (lookId: string) => apiRequest<void>(`/api/looks/${id(lookId)}`, { method: 'DELETE' }),
   categories: () => apiRequest<{ category_id: ClothingCategory; name: string; clothing_types: string[] }[]>('/api/categories', {}, false),
   products: (params = new URLSearchParams(), signal?: AbortSignal) =>
-    apiRequest<{ items: StoreProduct[]; mode: 'sample' | 'live'; total: number; limit: number; offset: number }>(`/api/products?${params}`, { signal }, false),
+    apiRequest<{ items: StoreProduct[]; mode: 'live'; total: number; limit: number; offset: number }>(`/api/products?${params}`, { signal }, false),
   product: (productId: string) => apiRequest<StoreProduct>(`/api/products/${id(productId)}`, {}, false),
   me: () => apiRequest<Profile>('/api/me'),
   updateProfile: (profile: Pick<Profile, 'name'> & Partial<Pick<Profile, 'height_cm' | 'weight_kg' | 'body_shape' | 'clothing_size' | 'skin_tone'>>) =>

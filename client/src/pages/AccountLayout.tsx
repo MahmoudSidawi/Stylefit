@@ -8,6 +8,7 @@ import { useRemote, useAction } from '../features/live/hooks'
 import { useSession } from '../features/auth/sessionContext'
 import { getSupabaseClient } from '../services/supabase'
 import { shopApi, type Profile } from '../services/shopApi'
+import { useAccountProfile } from '../features/auth/useAccountProfile'
 import '../features/products/styles/catalogue.css'
 import './profile.css'
 
@@ -18,7 +19,7 @@ export function AccountLayout({ title, description, profile: providedProfile, ch
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const cart = useRemote(shopApi.cart, session?.user.id ?? 'guest', !!session)
-  const account = useRemote(shopApi.me, session?.user.id ?? 'guest', !!session && !providedProfile)
+  const account = useAccountProfile(session?.user.id, providedProfile === undefined)
   const profile = providedProfile ?? account.data
   const action = useAction()
   async function signOut() {
@@ -47,7 +48,9 @@ export function AccountLayout({ title, description, profile: providedProfile, ch
           <button className="profile-signout" onClick={signOut} disabled={action.busy}>Sign out <Icon name="arrow" size={16} /></button>
         </aside>
         <div className="profile-main">
+          {cart.error && <p role="alert" className="profile-notice profile-error">Your bag count could not be updated. <button className="text-button" onClick={cart.reload}>Retry bag count</button></p>}
           {action.error && <p role="alert" className="profile-notice profile-error">{action.error}</p>}
+          {account.error && providedProfile === undefined && <p role="alert" className="profile-notice profile-error">{account.error} <button className="text-button" onClick={account.reload}>Retry account details</button></p>}
           {children}
         </div>
       </div></AccountGate>

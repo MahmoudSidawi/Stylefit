@@ -1,10 +1,9 @@
 import type { Variant } from '../../services/shopApi'
-export type Slot = 'core' | 'anchor' | 'dress'
+export type Slot = 'core' | 'anchor' | 'dress' | 'shoes' | 'hat'
 export type Occasion = 'evening' | 'work' | 'weekend'
 export type ArchiveSource = 'store' | 'wardrobe'
 export type Garment = {
   variants?: Variant[]
-  sample?: boolean
   id: string
   productId?: string
   name: string

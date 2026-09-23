@@ -16,7 +16,6 @@ export function CatalogueSort({
           const sort = event.target.value
           if (
             sort === 'editorial' ||
-            sort === 'match' ||
             sort === 'price-asc' ||
             sort === 'price-desc'
           )

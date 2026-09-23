@@ -17,11 +17,11 @@ export function WardrobeCard({
   return (
     <article className="wardrobe-card">
       <div className="wardrobe-card-image">
-        <img src={item.image} alt={item.name} loading="lazy" />
+        <>{item.image ? <img src={item.image} alt={item.name} loading="lazy" /> : <div className="wardrobe-photo-status" role="status"><Icon name="hanger" size={32} /><span>{item.imageError ? "Photo unavailable" : "Loading photo..."}</span></div>}</>
         <span className="wardrobe-kind">{kinds[item.kind].label}</span>
         <span className="wardrobe-source">
-          <Icon name={item.sample ? 'sparkles' : 'check'} size={12} />
-          {item.sample ? 'Sample piece' : 'Your piece'}
+          <Icon name="check" size={12} />
+          Your piece
         </span>
         <div className="wardrobe-card-tools">
           <button

@@ -4,11 +4,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-Category = Literal['tops', 'bottoms', 'dresses']
-Kind = Literal['t-shirts', 'shirts', 'hoodies', 'jeans', 'pants', 'shorts', 'skirts', 'dresses']
+Category = Literal['tops', 'bottoms', 'dresses', 'shoes', 'hats']
+Kind = Literal['t-shirts', 'shirts', 'hoodies', 'jeans', 'pants', 'shorts', 'skirts', 'dresses', 'shoes', 'hats']
 Text = Annotated[str, Field(min_length=1, max_length=120)]
 KINDS = {'tops': ['t-shirts', 'shirts', 'hoodies'],
-         'bottoms': ['jeans', 'pants', 'shorts', 'skirts'], 'dresses': ['dresses']}
+         'bottoms': ['jeans', 'pants', 'shorts', 'skirts'], 'dresses': ['dresses'], 'shoes': ['shoes'], 'hats': ['hats']}
 
 
 class Input(BaseModel):
@@ -46,6 +46,23 @@ class CategoryUpdate(Input):
 
 class WishlistAdd(Input):
     product_id: UUID
+
+
+class LookSelection(Input):
+    garmentId: str = Field(min_length=36, max_length=200)
+    size: Text
+
+
+class SavedLookInput(Input):
+    name: str = Field(min_length=3, max_length=60)
+    occasion: Literal['work', 'weekend', 'evening']
+    selection: list[LookSelection] = Field(min_length=1, max_length=5)
+
+    @model_validator(mode='after')
+    def distinct_pieces(self):
+        if len({item.garmentId for item in self.selection}) != len(self.selection):
+            raise ValueError('Choose distinct pieces.')
+        return self
 
 
 class Checkout(Input):

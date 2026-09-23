@@ -6,12 +6,12 @@ import type { SavedLook, Garment } from '../types'
 
 export function SaveLookDialog({
   initialName,
-  atLimit,
+  busy,
   onSave,
   onClose,
 }: {
   initialName: string
-  atLimit: boolean
+  busy: boolean
   onSave: (name: string) => void
   onClose: () => void
 }) {
@@ -20,7 +20,7 @@ export function SaveLookDialog({
   return (
     <Dialog title="Keep this composition" onClose={onClose}>
       <p className="dialog-intro">
-        Save this look in this browser, including your selected sizes and
+        Save this look to your account, including your selected sizes and
         occasion.
       </p>
       <form
@@ -32,7 +32,7 @@ export function SaveLookDialog({
             setError('Give your look a name with at least 3 characters.')
             return
           }
-          if (atLimit) return
+          if (busy) return
           onSave(name.trim())
         }}
       >
@@ -53,18 +53,12 @@ export function SaveLookDialog({
             {error}
           </p>
         )}
-        {atLimit && (
-          <p className="field-error" role="alert">
-            You’ve saved 20 looks. Remove one from Saved Looks before saving
-            another.
-          </p>
-        )}
         <button
           className="button button-primary"
-          disabled={atLimit}
+          disabled={busy}
           type="submit"
         >
-          <Icon name="bookmark" /> Save to this browser
+          <Icon name="bookmark" /> Save to my account
         </button>
       </form>
     </Dialog>
@@ -87,7 +81,7 @@ export function SavedLooksDialog({
   return (
     <Dialog title="Your saved looks" onClose={onClose}>
       <p className="dialog-intro">
-        Stored locally in this browser. Loading a look replaces the current
+        Saved to your account. Loading a look replaces the current
         canvas.
       </p>
       {!looks.length ? (

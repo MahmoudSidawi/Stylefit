@@ -11,7 +11,7 @@ import { useWardrobe } from '../hooks/useWardrobe'
 import { WardrobeOverview } from '../components/WardrobeOverview'
 import { WardrobeCard } from '../components/WardrobeCard'
 import { GarmentForm } from '../components/GarmentForm'
-import { colors, kinds, wardrobeCategories } from '../data/options'
+import { colors, kinds } from '../data/options'
 import type { WardrobeCategory, WardrobeDraft, WardrobeItem } from '../types'
 import '../../products/styles/catalogue.css'
 import '../styles/wardrobe.css'
@@ -22,6 +22,8 @@ type WardrobeDialog =
   | null
 
 export default function WardrobePage() {
+  const categoryData = useRemote(shopApi.categories, 'categories')
+  const wardrobeCategories = [{ id: 'all' as const, label: 'All' }, ...(categoryData.data ?? []).map((row) => ({ id: row.category_id, label: row.name }))]
   const wardrobe = useWardrobe()
   const { session } = useSession()
   const cart = useRemote(shopApi.cart, session?.user.id ?? 'guest', !!session)
@@ -114,9 +116,11 @@ export default function WardrobePage() {
           )}
           {wardrobe.error && (
             <p className="wardrobe-notice" role="alert">
-              {wardrobe.error}
+              {wardrobe.error} <button className="text-button" onClick={wardrobe.reload}>Retry wardrobe</button>
             </p>
           )}
+          {categoryData.error && <p className="wardrobe-notice" role="alert">Categories could not be loaded. <button className="text-button" onClick={categoryData.reload}>Retry categories</button></p>}
+          {wardrobe.items.some((item) => item.imageError) && <p className="wardrobe-notice" role="alert">Some photos could not load. Your clothes are still available. <button className="text-button" onClick={wardrobe.retryPhotos}>Retry photos</button></p>}
           <section
             className="wardrobe-collection"
             aria-label="Your clothing collection"
@@ -167,7 +171,7 @@ export default function WardrobePage() {
                   />
                 ))}
               </div>
-            ) : (
+            ) : !wardrobe.loading && !wardrobe.error ? (
               <div className="wardrobe-empty">
                 <Icon name="hanger" size={40} />
                 <h2>
@@ -196,7 +200,7 @@ export default function WardrobePage() {
                     : 'Add your first garment'}
                 </button>
               </div>
-            )}
+            ) : null}
           </section></AccountGate>
         </div>
       </main>

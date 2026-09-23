@@ -1,3 +1,5 @@
+import { shopApi } from '../../../services/shopApi'
+import { useRemote } from '../../live/hooks'
 import { useEffect, useRef, useState } from 'react'
 import { Dialog } from '../../../components/ui/Dialog'
 import { Icon } from '../../../components/ui/Icon'
@@ -21,6 +23,8 @@ export function GarmentForm({
   onSave,
   onClose,
 }: Props) {
+  const categories = useRemote(shopApi.categories, 'categories')
+  const availableKinds = (categories.data ?? []).flatMap((row) => row.clothing_types).filter(isKind)
   const [draft, setDraft] = useState<WardrobeDraft>(() =>
     item
       ? { ...item }
@@ -102,7 +106,7 @@ export function GarmentForm({
       next.name = 'Enter a name with at least 3 characters.'
     if (!draft.material.trim()) next.material = 'Enter the fabric or material.'
     if (!draft.size.trim()) next.size = 'Enter a size, or “One size”.'
-    if (!draft.image) next.image = 'Choose a photo of this garment.'
+    if (!draft.image && !item?.record?.image_url) next.image = 'Choose a photo of this garment.'
     setErrors(next)
     if (Object.keys(next).length) return
     setSaving(true)
@@ -222,9 +226,9 @@ export function GarmentForm({
                     setDraft({ ...draft, kind: event.target.value })
                 }}
               >
-                {Object.entries(kinds).map(([id, value]) => (
+                {availableKinds.map((id) => (
                   <option key={id} value={id}>
-                    {value.label}
+                    {kinds[id].label}
                   </option>
                 ))}
               </select>

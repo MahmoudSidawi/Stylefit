@@ -1,9 +1,7 @@
 import { Icon } from '../../../components/ui/Icon'
-import atelier from '../../../assets/storefront/atelier.jpg'
-import tailoring from '../../../assets/storefront/tailoring.jpg'
-import curator from '../../../assets/storefront/curator.jpg'
+import type { StorefrontContent } from '../../../services/shopApi'
 
-export function Editorial() {
+export function Editorial({ content }: { content: StorefrontContent }) {
   return (
     <>
       <section className="sizing-banner" aria-labelledby="sizing-title">
@@ -42,16 +40,14 @@ export function Editorial() {
         <div className="editorial-copy">
           <span className="overline">Curator’s Manifesto</span>
           <h2 id="editorial-title">
-            Tension between human instinct &amp; mathematical beauty.
+            {content.editorial_title}
           </h2>
           <p>
-            Fashion is not a spreadsheet, yet proportion is entirely geometric.
-            This collection explores the meeting of sculptural tailoring and
-            soft, intuitive dressing — a little structure, a little freedom.
+            {content.editorial_description}
           </p>
           <div className="curator">
             <img
-              src={curator}
+              src={content.curator_image}
               alt="Black and white portrait from the collection’s editorial"
               loading="lazy"
             />
@@ -63,12 +59,12 @@ export function Editorial() {
         </div>
         <div className="editorial-images">
           <img
-            src={atelier}
+            src={content.atelier_image}
             alt="A fashion atelier with a dress form, fabric swatches, and a moodboard"
             loading="lazy"
           />
           <img
-            src={tailoring}
+            src={content.tailoring_image}
             alt="Close-up of a tailored blazer’s lining, seams, and horn buttons"
             loading="lazy"
           />

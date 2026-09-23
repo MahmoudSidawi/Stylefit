@@ -1,9 +1,8 @@
 import { Icon } from '../../../components/ui/Icon'
 import { Link } from 'react-router-dom'
-import hero from '../../../assets/storefront/hero.jpg'
-import detail from '../../../assets/storefront/silk-detail.jpg'
+import type { StorefrontContent } from '../../../services/shopApi'
 
-export function CollectionHero({ count = 24 }: { count?: number }) {
+export function CollectionHero({ count, content }: { count: number; content: StorefrontContent }) {
   return (
     <section className="collection-hero" aria-labelledby="collection-title">
       <div className="hero-copy">
@@ -11,13 +10,11 @@ export function CollectionHero({ count = 24 }: { count?: number }) {
           <Icon name="sparkles" size={13} /> A considered approach to style
         </span>
         <div>
-          <p className="overline">Editorial Capsule No. 04</p>
-          <h1 id="collection-title">Spring Architecture</h1>
+          <p className="overline">{content.subtitle}</p>
+          <h1 id="collection-title">{content.title}</h1>
         </div>
         <p className="hero-description">
-          Sharp tailoring softens into fluid drape. Sculptural linen blazers,
-          draped raw silks, and considered trousers for a wardrobe that feels
-          entirely your own.
+          {content.description}
         </p>
         <div className="hero-actions">
           <Link className="button button-primary" to="/clothes">
@@ -45,8 +42,8 @@ export function CollectionHero({ count = 24 }: { count?: number }) {
       <div className="hero-montage">
         <div className="hero-image">
           <img
-            src={hero}
-            alt="Editorial model wearing a terracotta tailored suit in a sunlit studio"
+            src={content.hero_image}
+            alt={content.hero_alt}
             fetchPriority="high"
           />
           <span className="image-caption">
@@ -55,8 +52,8 @@ export function CollectionHero({ count = 24 }: { count?: number }) {
         </div>
         <div className="hero-aside">
           <img
-            src={detail}
-            alt="Ivory raw silk with tortoiseshell buttons and delicate stitching"
+            src={content.detail_image}
+            alt={content.detail_alt}
           />
           <div className="match-tile">
             <Icon name="sparkles" size={24} />

@@ -44,14 +44,13 @@ export function LiveCatalogue() {
     <div className="live-controls">
       <label>Search<input value={query} type="search" onChange={(event) => { setParams({ q: event.target.value }); setPage(0) }} placeholder="Find your next basic" /></label>
       <label>Category<select value={category} onChange={(event) => { setCategory(event.target.value); setPage(0) }}>
-        <option value="">All clothes</option><option value="tops">Tops</option><option value="bottoms">Bottoms</option><option value="dresses">Dresses</option>
+        <option value="">All clothes</option><option value="tops">Tops</option><option value="bottoms">Bottoms</option><option value="dresses">Dresses</option><option value="shoes">Shoes</option><option value="hats">Hats</option>
       </select></label>
       <label>Size<select value={size} onChange={(event) => { setSize(event.target.value); setPage(0) }}><option value="">All sizes</option>{['XS', 'S', 'M', 'L', 'XL'].map((s) => <option key={s}>{s}</option>)}</select></label>
       <label>Sort<select value={sort} onChange={(event) => { setSort(event.target.value); setPage(0) }}><option value="name">Name</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option></select></label>
     </div>
     <Notice {...items} />
     {items.error && <button className="button button-surface" onClick={items.reload}>Retry</button>}
-    {items.data?.mode === 'sample' && <p role="status">Sample collection. Account and purchase features will be available after store setup.</p>}
     {items.data && <><p>{items.data.total} pieces found</p><div className="live-grid">{items.data.items.map((p) => <ProductTile key={p.product_id} product={p} />)}</div>
       {!items.data.items.length && <p className="live-empty">No clothes match these filters.</p>}
       <div className="live-actions"><button className="button button-surface" disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><span>Page {page + 1}</span><button className="button button-surface" disabled={(page + 1) * 12 >= items.data.total} onClick={() => setPage(page + 1)}>Next</button></div></>}
@@ -111,21 +110,30 @@ export function LiveCheckout() {
 export function LiveWishlist() {
   const { session } = useSession()
   const saved = useRemote(shopApi.wishlist, session?.user.id ?? '', !!session)
-  return <LiveLayout title="Your Wishlist" privatePage><Notice {...saved} /><div className="live-grid">{saved.data?.filter((row) => row.products).map((row) => <ProductTile key={row.product_id} product={row.products} saved />)}</div>{saved.data?.length === 0 && <p>No saved clothes yet.</p>}</LiveLayout>
+  const products = saved.data?.filter((row) => row.products) ?? []
+  return <AccountLayout title="Saved favorites" description="The pieces you love, ready when you are.">
+    {saved.loading && <p className="profile-notice" role="status">Loading your favorites...</p>}
+    {saved.error && <div className="profile-notice profile-error" role="alert">{saved.error} <button className="text-button" onClick={saved.reload}>Try again</button></div>}
+    {!!products.length && <>
+      <section className="account-detail-card account-favorites-heading"><div className="profile-section-heading"><span className="profile-section-icon"><Icon name="heart" size={20} /></span><div><h2>Your collection</h2><p>{products.length} saved {products.length === 1 ? 'piece' : 'pieces'}. Choose a size or take a closer look.</p></div></div><Link to="/clothes">Explore clothes <Icon name="arrow" size={16} /></Link></section>
+      <div className="account-favorites-grid">{products.map((row) => <ProductTile key={row.product_id} product={row.products} saved />)}</div>
+    </>}
+    {!saved.loading && !saved.error && !products.length && <section className="account-detail-card account-orders-empty"><span className="profile-section-icon"><Icon name="heart" size={24} /></span><h2>A place for your favorites.</h2><p>Save the pieces you love while exploring the collection. They’ll appear here.</p><Link className="button button-primary" to="/clothes">Explore the collection<Icon name="arrow" size={16} /></Link></section>}
+  </AccountLayout>
 }
 
 export function LiveOrders() {
   const { session } = useSession()
   const orders = useRemote(shopApi.orders, session?.user.id ?? '', !!session)
   return <AccountLayout title="My orders" description="Track your purchases, from our collection to your door.">
-    <Notice {...orders} />
-    {orders.error && <button className="button button-surface" onClick={orders.reload}>Try again</button>}
+    {orders.loading && <p className="profile-notice" role="status">Loading your orders...</p>}
+    {orders.error && <div className="profile-notice profile-error" role="alert">{orders.error} <button className="text-button" onClick={orders.reload}>Try again</button></div>}
     {orders.data?.map((order) => <article className="account-detail-card account-order" key={order.order_id}>
       <header className="account-order-heading"><div><span className="profile-eyebrow">{new Date(order.created_at).toLocaleDateString()}</span><h2>Order {order.order_id}</h2></div><span className={`account-order-status status-${order.status}`}>{order.status}</span></header>
       <div className="account-order-items">{order.order_items.map((item, index) => <div key={index}><span className="profile-section-icon"><Icon name="bag" size={18} /></span><div><h3>{item.product_name}</h3><p>Size {item.size} / {item.color} / Qty {item.quantity}</p></div><strong>{formatMoney(Number(item.unit_price) * item.quantity)}</strong></div>)}</div>
       <footer className="account-order-total"><span>{order.status === 'cancelled' ? 'Order cancelled' : order.is_paid ? 'Payment collected' : 'Cash on delivery / Payment pending'}</span><div>Total <strong>{formatMoney(Number(order.total_amount))}</strong></div></footer>
       {order.delivery_address && <details className="account-delivery"><summary>Delivery details</summary><p>{order.recipient_name}<br />{order.phone}<br />{order.delivery_address}</p></details>}
     </article>)}
-    {orders.data?.length === 0 && <section className="account-detail-card account-orders-empty"><span className="profile-section-icon"><Icon name="bag" size={24} /></span><h2>Your next favorite is waiting.</h2><p>Your orders will appear here after checkout.</p><Link className="button button-primary" to="/clothes">Explore the collection<Icon name="arrow" size={16} /></Link></section>}
+    {!orders.loading && !orders.error && orders.data?.length === 0 && <section className="account-detail-card account-orders-empty"><span className="profile-section-icon"><Icon name="bag" size={24} /></span><h2>Your next favorite is waiting.</h2><p>Your orders will appear here after checkout.</p><Link className="button button-primary" to="/clothes">Explore the collection<Icon name="arrow" size={16} /></Link></section>}
   </AccountLayout>
 }
