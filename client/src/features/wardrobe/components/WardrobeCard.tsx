@@ -1,3 +1,4 @@
+import { CollectionCard } from '../../products/components/CollectionCard'
 import { Link } from 'react-router-dom'
 import { Icon } from '../../../components/ui/Icon'
 import { colors, kinds } from '../data/options'
@@ -15,8 +16,10 @@ export function WardrobeCard({
   onRemove: (item: WardrobeItem) => void
 }) {
   return (
-    <article className="wardrobe-card">
-      <div className="wardrobe-card-image">
+    <CollectionCard className="wardrobe-card"
+      title={<button onClick={() => onEdit(item)}>{item.name}</button>}
+      description={`${kinds[item.kind].label} / ${item.material} / ${item.rawColor || colors[item.color].label}`}
+      image={<>
         <>{item.image ? <img src={item.image} alt={item.name} loading="lazy" /> : <div className="wardrobe-photo-status" role="status"><Icon name="hanger" size={32} /><span>{item.imageError ? "Photo unavailable" : "Loading photo..."}</span></div>}</>
         <span className="wardrobe-kind">{kinds[item.kind].label}</span>
         <span className="wardrobe-source">
@@ -39,25 +42,18 @@ export function WardrobeCard({
             <Icon name="trash" size={16} />
           </button>
         </div>
-      </div>
-      <div className="wardrobe-card-title">
-        <h2>{item.name}</h2>
-        <span>
-          <i style={{ backgroundColor: colors[item.color].hex }} />
-          {item.rawColor || colors[item.color].label}
-        </span>
-      </div>
-      <div className="wardrobe-tags">
-        <span>{item.material}</span>
-        <span>Size {item.size}</span>
-      </div>
-      {onAnalyze && <button className="button button-lavender" onClick={() => onAnalyze(item)}><Icon name="sparkles" size={16} /> Suggest details with AI</button>}
+      </>}
+    >
+      <div className="size-selector"><span>Fit:</span><span className="owned-size">{item.size}</span></div>
+      <div className="card-actions">
+      {onAnalyze && <button className="button button-lavender" onClick={() => onAnalyze(item)}><Icon name="sparkles" size={16} /> <span>Suggest details with AI</span></button>}
       <Link
         className="button button-primary"
         to={`/matcher?wardrobe=${encodeURIComponent(item.id)}`}
       >
         <Icon name="hanger" size={16} /> Match with Store
       </Link>
-    </article>
+    </div>
+    </CollectionCard>
   )
 }

@@ -1,3 +1,5 @@
+import { Pagination } from '../../../components/ui/Pagination'
+import { usePagination } from '../../../components/ui/usePagination'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { StorefrontHeader } from '../../../components/layout/StorefrontHeader'
@@ -67,7 +69,7 @@ export default function CataloguePage({
     savedOnly ||
     maxPrice < 100 ||
     filterSize !== 'all'
-  const visibleProducts = (allClothes ? products : products.slice(0, 4))
+  const visibleProducts = products
     .filter(
       (product) =>
         (category === 'all' || product.category === category) &&
@@ -85,6 +87,8 @@ export default function CataloguePage({
           ? b.price - a.price
           : 0,
     )
+
+  const pagination = usePagination(visibleProducts, allClothes ? 8 : 4, JSON.stringify([allClothes, query, category, sort, savedOnly, maxPrice, filterSize]))
 
   useEffect(() => {
     document.title = allClothes
@@ -261,7 +265,7 @@ export default function CataloguePage({
               )}
               {visibleProducts.length > 0 ? (
                 <div className="product-grid">
-                  {visibleProducts.map((product) => (
+                  {pagination.items.map((product) => (
                     <ProductCard
                       key={product.id}
                       product={product}
@@ -273,7 +277,7 @@ export default function CataloguePage({
                     />
                   ))}
                 </div>
-              ) : (
+              ) : !catalogue.loading && !catalogue.error ? (
                 <div className="empty-results">
                   <Icon name="search" size={30} />
                   <h2>A fresh perspective?</h2>
@@ -288,7 +292,8 @@ export default function CataloguePage({
                     {allClothes ? 'Show all garments' : 'Show best sellers'}
                   </button>
                 </div>
-              )}
+              ) : null}
+              {allClothes && <Pagination {...pagination} />}
               {!allClothes && (
                 <p className="best-sellers-note">
                   A curated selection from the StyleFit collection.

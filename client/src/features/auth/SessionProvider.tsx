@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { getSupabaseClient, getAdminClient, isSupabaseConfigured } from '../../services/supabase'
 import { SessionContext } from './sessionContext'
 import { clearAccountProfiles } from './useAccountProfile'
+import { clearWardrobePhotos } from '../wardrobe/data/photoCache'
 
 export function SessionProvider({ children, admin = false }: { children: ReactNode; admin?: boolean }) {
   const [session, setSession] = useState<Session | null>(null)
@@ -12,7 +13,10 @@ export function SessionProvider({ children, admin = false }: { children: ReactNo
     const client = admin ? getAdminClient() : getSupabaseClient()
     let previousUser: string | undefined
     const { data } = client.auth.onAuthStateChange((event, next) => {
-      if (!admin && (event === 'SIGNED_OUT' || (previousUser && previousUser !== next?.user.id))) clearAccountProfiles()
+      if (!admin && (event === 'SIGNED_OUT' || (previousUser && previousUser !== next?.user.id))) {
+        clearAccountProfiles()
+        clearWardrobePhotos()
+      }
       previousUser = next?.user.id
       setSession(next)
       setLoading(false)

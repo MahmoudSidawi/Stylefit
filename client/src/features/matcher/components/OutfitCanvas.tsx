@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { GarmentLayer } from './GarmentLayer'
 import { Icon } from '../../../components/ui/Icon'
 import { formatMoney } from '../../../utils/currency'
 import type { Garment } from '../types'
@@ -18,40 +18,24 @@ type Props = {
 }
 
 export function OutfitCanvas({ busy = false, selected, name, total, storeCount, onRemove, onSize, onCheck, onClear, onSave, onAddBag }: Props) {
-  const id = useId().replace(/:/g, '')
   const top = selected.find(({ garment }) => garment.slot === 'core')?.garment
   const bottom = selected.find(({ garment }) => garment.slot === 'anchor')?.garment
   const dress = selected.find(({ garment }) => garment.slot === 'dress')?.garment
   const shoes = selected.find(({ garment }) => garment.slot === 'shoes')?.garment
   const hat = selected.find(({ garment }) => garment.slot === 'hat')?.garment
-  const shapes = [
-    { garment: shoes, slot: 'shoes', x: 113, y: 405, width: 94, height: 35, path: 'M127 405 L151 405 L151 435 L116 438 Q110 428 127 419 Z M169 405 L192 405 L194 419 Q211 428 204 438 L169 435 Z' },
-    { garment: hat, slot: 'hat', x: 122, y: 15, width: 76, height: 38, path: 'M133 42 Q133 13 160 15 Q187 13 187 42 L198 48 Q160 57 122 48 Z' },
-    { garment: bottom, slot: 'anchor', x: 105, y: 218, width: 110, height: 192, path: 'M116 218 L204 218 L210 268 L190 410 L160 410 L161 285 L153 285 L151 410 L121 410 L106 268 Z' },
-    { garment: dress, slot: 'dress', x: 79, y: 104, width: 162, height: 276, path: 'M128 104 Q160 126 192 104 L211 124 L195 193 L241 380 Q160 395 79 380 L125 193 L109 124 Z' },
-    { garment: top, slot: 'core', x: 80, y: 104, width: 160, height: 137, path: 'M128 104 Q160 129 192 104 L213 120 L240 170 L209 185 L197 159 L204 241 Q160 250 116 241 L123 159 L111 185 L80 170 L107 120 Z' },
-  ]
+  const layers = [bottom, dress, top, shoes, hat].filter((garment): garment is Garment => !!garment)
   return <section className="canvas-column" aria-labelledby="canvas-title">
     <div className="canvas-heading"><div><span className="overline">YOUR OUTFIT</span><h2 id="canvas-title">{name}</h2></div>
       <button className="icon-button" aria-label="Clear canvas" disabled={!selected.length || busy} onClick={onClear}><Icon name="reset" size={18} /></button></div>
     <div className="person-preview">
       <span className="preview-tag">Front view</span>
       <svg className="outfit-person" viewBox="0 0 320 460" role="img" aria-label={`Mannequin outfit preview${selected.length ? ': ' + selected.map(({ garment }) => garment.name).join(', ') : ': choose clothes to begin'}`}>
-        <defs>{shapes.map(({ slot, path }) => <clipPath key={slot} id={`${id}-${slot}`}><path d={path} /></clipPath>)}</defs>
         <ellipse cx="160" cy="438" rx="89" ry="9" fill="#dfd9ce" opacity=".6" />
         <g fill="#ded4c7" stroke="#c3b6a6" strokeWidth="1.2">
           <ellipse cx="160" cy="58" rx="27" ry="35" />
           <path d="M146 88 L145 105 Q121 108 110 126 L88 204 L76 267 Q80 282 89 270 L105 211 L122 166 L117 233 Q102 269 116 301 L127 415 L122 433 Q123 440 151 435 L158 295 L165 295 L171 435 Q199 440 198 432 L192 415 L204 301 Q218 268 203 233 L198 166 L215 211 L231 270 Q240 282 244 267 L232 204 L210 126 Q199 109 175 105 L174 88" />
         </g>
-        {shapes.map(({ garment, slot, path, x, y, width, height }) => garment && <g key={slot} data-garment-slot={slot}>
-          <g clipPath={`url(#${id}-${slot})`}>
-            <rect x={x} y={y} width={width} height={height} fill={garment.color} />
-            <svg x={x} y={y} width={width} height={height} viewBox="0 0 300 400" preserveAspectRatio="none">
-              <image href={garment.detailImage || undefined} width={300} height={400} preserveAspectRatio="xMidYMid slice" />
-            </svg>
-          </g>
-          <path d={path} fill="none" stroke="#6e665e" strokeWidth="1.2" strokeLinejoin="round" />
-        </g>)}
+        {layers.map((garment) => <GarmentLayer key={garment.id} garment={garment} />)}
       </svg>
       {!selected.length && <p className="preview-hint">Choose a top and bottom<br />to build your look.</p>}
       <span className="preview-caption">Illustrative preview / actual fit may vary</span>

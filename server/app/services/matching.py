@@ -19,9 +19,11 @@ def normalize_photo(content: bytes) -> str:
         with warnings.catch_warnings():
             warnings.simplefilter('error', Image.DecompressionBombWarning)
             with Image.open(BytesIO(content)) as photo:
-                if photo.format not in ('JPEG', 'PNG') or photo.width * photo.height > 25_000_000:
+                if photo.format not in ('JPEG', 'PNG', 'WEBP') or photo.width * photo.height > 25_000_000:
                     raise ValueError('Invalid image')
-                picture = ImageOps.exif_transpose(photo).convert('RGB')
+                rgba = ImageOps.exif_transpose(photo).convert('RGBA')
+                picture = Image.new('RGB', rgba.size, 'white')
+                picture.paste(rgba, mask=rgba.getchannel('A'))
                 picture.thumbnail((1024, 1024))
                 output = BytesIO()
                 picture.save(output, format='JPEG', quality=85)

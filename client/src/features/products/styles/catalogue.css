@@ -1901,3 +1901,25 @@ html {
 
 .product-color { display: flex; gap: 12px; align-items: center; margin: 10px 0; }
 .product-color select { max-width: 100%; padding: 6px; font: inherit; border: 1px solid var(--sf-border); border-radius: 4px; background: var(--sf-background); }
+
+/* Shared card details, including owned pieces and long sizes/names. */
+.product-card .product-image > img, .product-card .image-preview img { width: 100%; height: 100%; object-fit: contain; }
+.product-card .product-title h3 { overflow-wrap: anywhere; }
+.product-card .size-selector { flex-wrap: wrap; }
+.product-card .owned-size { padding: 6px 9px; border-radius: 5px; background: var(--sf-background); color: var(--sf-ink); }
+.product-card .card-actions .button { white-space: normal; text-align: center; }
+
+/* Every collection follows the storefront's columns and spacing. */
+.storefront .product-grid, .storefront .wardrobe-grid, .storefront .account-favorites-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sf-gap); }
+@media (max-width: 1199px) {
+  .storefront .product-grid, .storefront .wardrobe-grid, .storefront .account-favorites-grid { gap: 18px; }
+}
+@media (max-width: 960px) {
+  .storefront .product-grid, .storefront .wardrobe-grid, .storefront .account-favorites-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+  .storefront .product-grid, .storefront .wardrobe-grid, .storefront .account-favorites-grid { gap: 16px; }
+}
+@media (max-width: 479px) {
+  .storefront .product-grid, .storefront .wardrobe-grid, .storefront .account-favorites-grid { grid-template-columns: 1fr; }
+}

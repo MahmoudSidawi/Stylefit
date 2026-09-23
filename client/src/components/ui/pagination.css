@@ -1,0 +1,9 @@
+.collection-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 24px; padding-block: 16px; }
+.collection-pagination p { color: var(--sf-muted); font-size: 12px; }
+.pagination-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.pagination-controls > span { display: inline-flex; align-items: center; gap: 6px; }
+.pagination-controls button { min-width: 36px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--sf-surface-deep); border-radius: 8px; background: var(--sf-surface); color: var(--sf-ink); font: inherit; font-size: 12px; }
+.pagination-controls button[aria-current='page'] { background: var(--sf-primary); color: white; }
+.pagination-controls button:disabled { opacity: .45; cursor: default; }
+.pagination-controls button:focus-visible { outline: 2px solid var(--sf-primary); outline-offset: 3px; }
+.pagination-gap { color: var(--sf-muted); }

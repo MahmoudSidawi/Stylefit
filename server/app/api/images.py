@@ -8,6 +8,8 @@ from PIL import Image, UnidentifiedImageError  # type: ignore[import-not-found]
 from app.core.auth import Identity, current_user, admin_user
 from app.core.config import settings
 from app.services import database
+from app.services.photo_assets import display_photo
+from starlette.concurrency import run_in_threadpool
 
 router = APIRouter(prefix='/api', tags=['Images'])
 MAX_BYTES = 5 * 1024 * 1024
@@ -30,8 +32,7 @@ async def validated_upload(file: UploadFile):
                 picture.verify()
     except (UnidentifiedImageError, OSError, ValueError, SyntaxError, Image.DecompressionBombError, Image.DecompressionBombWarning) as exc:
         raise HTTPException(422, 'This image cannot be read. Choose a valid JPG or PNG under 25 megapixels.') from exc
-    extension, mime = ('jpg', 'image/jpeg') if image_format == 'JPEG' else ('png', 'image/png')
-    return content, extension, mime
+    return await run_in_threadpool(display_photo, content), 'webp', 'image/webp'
 
 
 @router.post('/wardrobe/images', status_code=201)

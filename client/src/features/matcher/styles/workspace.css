@@ -115,3 +115,9 @@
   .matcher-page .outfit-person { height: 195px; }
   .matcher-page .shop-toast { top: 116px; max-width: calc(100% - 24px); }
 }
+
+/* Leave enough room to inspect garment alignment on the body. */
+.matcher-page .outfit-person { height: clamp(340px, 48vh, 500px); }
+@media (max-width: 680px) { .matcher-page .outfit-person { height: 350px; } }
+
+.matcher-page .archive-thumbnail img, .matcher-page .selected-piece > img { object-fit: contain; }

@@ -10,6 +10,7 @@ export type Garment = {
   brand: string
   material: string
   source: ArchiveSource
+  clothingType?: string
   slot: Slot
   price: number
   sizes: string[]

@@ -9,6 +9,107 @@ const products = ['Cotton T-shirt', 'Straight Jeans', 'Everyday Dress'].map((nam
     price: 25 + i * 10, stock_quantity: 20, image_url: `/clothes/${['basic-tee', 'straight-jeans', 'everyday-dress'][i]}.svg`, is_active: true }],
 }))
 const dimension = { score: 86, explanation: 'These pieces work well together.' }
+
+test('garment-only photos align by clothing type without silhouette clipping', async ({ page }) => {
+  await setup(page)
+  const entries = [
+    ['White Tee', 'tops', 't-shirts', 'tshirt-7'],
+    ['Blue Jeans', 'bottoms', 'jeans', 'jeans-12'],
+    ['Black Skirt', 'bottoms', 'skirts', 'skirt-silk'],
+    ['Denim Shorts', 'bottoms', 'shorts', 'jeans-6'],
+    ['Day Dress', 'dresses', 'dresses', 'dress-17'],
+    ['Canvas Shoes', 'shoes', 'shoes', 'converse-0'],
+    ['White Cap', 'hats', 'hats', 'cap-1'],
+  ].map(([name, category_id, clothing_type, asset], index) => ({ ...products[0], product_id: `cutout-${index}`, name, category_id, clothing_type,
+    product_variants: [{ ...products[0].product_variants[0], image_url: `/cutout-test/${asset}.png` }] }))
+  await page.route('**/api/products?**', (route) => route.fulfill({ json: { items: entries, total: entries.length, limit: 100, offset: 0, mode: 'live' } }))
+  await page.route('**/cutout-test/*', (route) => route.fulfill({ path: `../server/scripts/fixtures/cutouts/${new URL(route.request().url()).pathname.split('/').at(-1)}`, contentType: 'image/png' }))
+  await page.goto('/matcher')
+  for (const name of ['White Tee', 'Blue Jeans', 'Canvas Shoes', 'White Cap']) await page.getByRole('button', { name: `Add ${name} to canvas`, exact: true }).click()
+  const canvas = page.locator('.outfit-person')
+  await expect(canvas.locator('[data-garment-slot]')).toHaveCount(4)
+  await expect(canvas.locator('clipPath')).toHaveCount(0)
+  await expect(canvas.locator('[data-garment-slot="core"] > svg')).not.toHaveAttribute('viewBox', '0 0 300 400')
+  await page.locator('.person-preview').screenshot({ path: '../docs/previews/garment-only-outfit.png' })
+  await page.getByRole('button', { name: 'Add Black Skirt to canvas', exact: true }).click()
+  await expect(canvas.locator('[data-garment-slot="anchor"]')).toHaveAttribute('data-clothing-type', 'skirts')
+  await expect(canvas.locator('[data-garment-slot="anchor"] > svg')).toHaveAttribute('height', '145')
+  await page.getByRole('button', { name: 'Add Denim Shorts to canvas', exact: true }).click()
+  await expect(canvas.locator('[data-garment-slot="anchor"] > svg')).toHaveAttribute('height', '84')
+  await page.getByRole('button', { name: 'Add Day Dress to canvas', exact: true }).click()
+  await expect(canvas.locator('[data-garment-slot="anchor"]')).toHaveCount(0)
+  await expect(canvas.locator('[data-garment-slot="dress"]')).toHaveCount(1)
+})
+
+test('collections show eight cards in four columns while storefront has no pagination', async ({ page }) => {
+  await setup(page)
+  const items = Array.from({ length: 9 }, (_, index) => ({ ...products[index % 3], product_id: `piece-${index}`, name: `Piece ${index + 1}` }))
+  let favorites = items.map((product) => ({ product_id: product.product_id, products: product }))
+  await page.route('**/api/products?**', (route) => route.fulfill({ json: { items, total: items.length, limit: 100, offset: 0, mode: 'live' } }))
+  await page.route('**/api/wishlist**', (route) => {
+    if (route.request().method() === 'DELETE') {
+      favorites = favorites.filter((row) => !route.request().url().endsWith(row.product_id))
+      return route.fulfill({ status: 204 })
+    }
+    return route.fulfill({ json: favorites })
+  })
+  await page.route('**/api/wardrobe', (route) => route.fulfill({ json: items.map((item) => ({
+    wardrobe_item_id: item.product_id, name: item.name, category_id: item.category_id,
+    clothing_type: item.clothing_type, color: 'cream', size: 'M', material: 'Cotton', image_url: 'private/photo.jpg', style: 'casual', pattern: 'solid',
+  })) }))
+  await page.route('**/api/wardrobe/*/image', (route) => route.fulfill({ json: { url: '/clothes/photos/jeans.jpg', expires_in: 300 } }))
+  const cardStyle = () => page.locator('.product-card').first().evaluate((card) => {
+    const style = getComputedStyle(card)
+    return { width: card.getBoundingClientRect().width, padding: style.padding, radius: style.borderRadius, background: style.backgroundColor,
+      imageRatio: getComputedStyle(card.querySelector('.product-image')!).aspectRatio,
+      titleSize: getComputedStyle(card.querySelector('h3')!).fontSize }
+  })
+  await page.goto('/catalogue')
+  await expect(page.locator('.product-card')).toHaveCount(4)
+  const storefrontStyle = await cardStyle()
+  const pagination = page.getByRole('navigation', { name: 'Collection pagination' })
+  await expect(pagination).toHaveCount(0)
+  for (const path of ['/clothes', '/wardrobe', '/wishlist']) {
+    await page.goto(path)
+    await expect(page.locator('.product-card')).toHaveCount(8)
+    const currentStyle = await cardStyle()
+    if (path === '/clothes') {
+      expect(currentStyle.width).toBeLessThan(storefrontStyle.width)
+      expect({ ...currentStyle, width: storefrontStyle.width }).toEqual(storefrontStyle)
+      const sidebar = await page.getByRole('complementary', { name: 'Clothing filters' }).boundingBox()
+      const cards = await page.locator('.product-card').evaluateAll((nodes) => nodes.map((node) => {
+        const rect = node.getBoundingClientRect()
+        return { x: rect.x, y: rect.y, right: rect.right }
+      }))
+      expect(sidebar!.x + sidebar!.width).toBeLessThan(cards[0].x)
+      expect(new Set(cards.slice(0, 4).map((card) => card.y)).size).toBe(1)
+      expect(cards[4].y).toBeGreaterThan(cards[0].y)
+      expect(cards[3].right).toBeLessThanOrEqual(page.viewportSize()!.width)
+    } else expect(currentStyle).toEqual(storefrontStyle)
+    await pagination.getByRole('button', { name: 'Next', exact: true }).click()
+    await expect(page.locator('.product-card')).toHaveCount(1)
+    await expect(page.locator('.product-card h3')).toHaveText('Piece 9')
+    if (path === '/clothes') {
+      await page.getByRole('radio', { name: /Dresses/ }).check()
+      await expect(page.locator('.product-card')).toHaveCount(3)
+      await expect(pagination).toContainText('Page 1 of 1')
+    } else if (path === '/wardrobe') {
+      await page.getByRole('button', { name: 'Dresses (3)', exact: true }).click()
+      await expect(page.locator('.product-card')).toHaveCount(3)
+      await expect(pagination).toContainText('Page 1 of 1')
+    } else {
+      await page.getByRole('button', { name: 'Unsave Piece 9', exact: true }).click()
+      await expect(page.locator('.product-card')).toHaveCount(8)
+      await expect(pagination).toContainText('Page 1 of 1')
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
+  for (const path of ['/catalogue', '/clothes', '/wardrobe', '/wishlist']) {
+    await page.goto(path)
+    await expect(page.locator('.product-card').first()).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  }
+})
 const analysis = { score: 86, explanation: 'A comfortable everyday outfit with coordinated colors.', colors: dimension,
   styles: dimension, patterns: dimension, clothing_types: dimension, occasion: dimension, suggestions: ['Try a relaxed top.'],
   provider: 'groq', model: 'test-model', used_profile: false, images_analyzed: 0, disclaimer: 'A subjective styling estimate, not a guarantee of garment fit.' }

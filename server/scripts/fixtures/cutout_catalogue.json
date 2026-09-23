@@ -1,0 +1,630 @@
+[
+  {
+    "slug": "basic-tee",
+    "name": "White Cotton T-shirt",
+    "category": "tops",
+    "kind": "t-shirts",
+    "asset": "tshirt-7",
+    "color": "white",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 25,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "everyday-shirt",
+    "name": "Ivory Everyday Shirt",
+    "category": "tops",
+    "kind": "shirts",
+    "asset": "dress_shirt-33",
+    "color": "ivory",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 39,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "classic-hoodie",
+    "name": "Grey Pullover Hoodie",
+    "category": "tops",
+    "kind": "hoodies",
+    "asset": "hoodie-33",
+    "color": "grey",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 49,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "straight-jeans",
+    "name": "Straight-leg Blue Jeans",
+    "category": "bottoms",
+    "kind": "jeans",
+    "asset": "jeans-12",
+    "color": "blue",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 55,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "everyday-pants",
+    "name": "Grey Everyday Trousers",
+    "category": "bottoms",
+    "kind": "pants",
+    "asset": "pants-0",
+    "color": "grey",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 45,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "cotton-shorts",
+    "name": "Dark Denim Shorts",
+    "category": "bottoms",
+    "kind": "shorts",
+    "asset": "jeans-6",
+    "color": "indigo",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 29,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "midi-skirt",
+    "name": "Black Flared Skirt",
+    "category": "bottoms",
+    "kind": "skirts",
+    "asset": "skirt-silk",
+    "color": "black",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 35,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "everyday-dress",
+    "name": "Powder Blue Day Dress",
+    "category": "dresses",
+    "kind": "dresses",
+    "asset": "dress-3",
+    "color": "light blue",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 59,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "relaxed-tee",
+    "name": "Grey Cotton T-shirt",
+    "category": "tops",
+    "kind": "t-shirts",
+    "asset": "tshirt-6",
+    "color": "grey",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 22,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "pocket-tee",
+    "name": "Slate Blue T-shirt",
+    "category": "tops",
+    "kind": "t-shirts",
+    "asset": "tshirt-4",
+    "color": "blue",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 28,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "oxford-shirt",
+    "name": "Blue Denim Shirt",
+    "category": "tops",
+    "kind": "shirts",
+    "asset": "dress_shirt-8",
+    "color": "blue",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 44,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "linen-shirt",
+    "name": "Black Casual Shirt",
+    "category": "tops",
+    "kind": "shirts",
+    "asset": "dress_shirt-0",
+    "color": "black",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 48,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "zip-hoodie",
+    "name": "Black Zip Hoodie",
+    "category": "tops",
+    "kind": "hoodies",
+    "asset": "hoodie-27",
+    "color": "black",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 54,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "relaxed-hoodie",
+    "name": "Charcoal Pullover Hoodie",
+    "category": "tops",
+    "kind": "hoodies",
+    "asset": "hoodie-16",
+    "color": "charcoal",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 46,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "slim-jeans",
+    "name": "Light Blue Slim Jeans",
+    "category": "bottoms",
+    "kind": "jeans",
+    "asset": "jeans-25",
+    "color": "light blue",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 59,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "wide-jeans",
+    "name": "Indigo Straight Jeans",
+    "category": "bottoms",
+    "kind": "jeans",
+    "asset": "jeans-33",
+    "color": "indigo",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 62,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "chino-pants",
+    "name": "Khaki Cargo Pants",
+    "category": "bottoms",
+    "kind": "pants",
+    "asset": "pants-1",
+    "color": "khaki",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 49,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "relaxed-pants",
+    "name": "Navy Joggers",
+    "category": "bottoms",
+    "kind": "pants",
+    "asset": "pants-11",
+    "color": "navy",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 42,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "chino-shorts",
+    "name": "Everyday Denim Shorts",
+    "category": "bottoms",
+    "kind": "shorts",
+    "asset": "jeans-6",
+    "color": "indigo",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 32,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "weekend-shorts",
+    "name": "Weekend Denim Shorts",
+    "category": "bottoms",
+    "kind": "shorts",
+    "asset": "jeans-6",
+    "color": "indigo",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 26,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "a-line-skirt",
+    "name": "Blue A-line Skirt",
+    "category": "bottoms",
+    "kind": "skirts",
+    "asset": "skirt-blue",
+    "color": "blue",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 39,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "pleated-skirt",
+    "name": "Black Leather Skirt",
+    "category": "bottoms",
+    "kind": "skirts",
+    "asset": "skirt-leather",
+    "color": "black",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 44,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "midi-dress",
+    "name": "Navy Belted Day Dress",
+    "category": "dresses",
+    "kind": "dresses",
+    "asset": "dress-17",
+    "color": "navy",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 65,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "shirt-dress",
+    "name": "Teal Long-sleeve Dress",
+    "category": "dresses",
+    "kind": "dresses",
+    "asset": "dress-25",
+    "color": "teal",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "price": 69,
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "textured-day-dress",
+    "name": "Textured Beige Day Dress",
+    "category": "dresses",
+    "kind": "dresses",
+    "asset": "dress-28",
+    "color": "beige",
+    "price": 65,
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "striped-day-dress",
+    "name": "Neutral Striped Day Dress",
+    "category": "dresses",
+    "kind": "dresses",
+    "asset": "dress-44",
+    "color": "grey",
+    "price": 59,
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "pattern": "striped",
+    "style": "casual"
+  },
+  {
+    "slug": "demo-running-shoes",
+    "name": "Black High-top Canvas Sneakers",
+    "category": "shoes",
+    "kind": "shoes",
+    "asset": "converse-0",
+    "color": "black",
+    "price": 65,
+    "sizes": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "charcoal-canvas-sneakers",
+    "name": "Charcoal Canvas Sneakers",
+    "category": "shoes",
+    "kind": "shoes",
+    "asset": "converse-6",
+    "color": "charcoal",
+    "price": 65,
+    "sizes": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "navy-canvas-sneakers",
+    "name": "Navy Canvas Sneakers",
+    "category": "shoes",
+    "kind": "shoes",
+    "asset": "converse-9",
+    "color": "navy",
+    "price": 65,
+    "sizes": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "classic-canvas-sneakers",
+    "name": "Classic Black Canvas Sneakers",
+    "category": "shoes",
+    "kind": "shoes",
+    "asset": "converse-19",
+    "color": "black",
+    "price": 65,
+    "sizes": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "low-canvas-sneakers",
+    "name": "Black Low-top Canvas Sneakers",
+    "category": "shoes",
+    "kind": "shoes",
+    "asset": "converse-32",
+    "color": "black",
+    "price": 59,
+    "sizes": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "demo-baseball-cap",
+    "name": "White Baseball Cap",
+    "category": "hats",
+    "kind": "hats",
+    "asset": "cap-1",
+    "color": "white",
+    "price": 19,
+    "sizes": [
+      "One size"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "navy-baseball-cap",
+    "name": "Navy Baseball Cap",
+    "category": "hats",
+    "kind": "hats",
+    "asset": "cap-2",
+    "color": "navy",
+    "price": 19,
+    "sizes": [
+      "One size"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "grey-trucker-cap",
+    "name": "Grey Trucker Cap",
+    "category": "hats",
+    "kind": "hats",
+    "asset": "cap-4",
+    "color": "grey",
+    "price": 22,
+    "sizes": [
+      "One size"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "blue-baseball-cap",
+    "name": "Blue Baseball Cap",
+    "category": "hats",
+    "kind": "hats",
+    "asset": "cap-6",
+    "color": "blue",
+    "price": 19,
+    "sizes": [
+      "One size"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  },
+  {
+    "slug": "stone-baseball-cap",
+    "name": "Stone Baseball Cap",
+    "category": "hats",
+    "kind": "hats",
+    "asset": "cap-13",
+    "color": "stone",
+    "price": 19,
+    "sizes": [
+      "One size"
+    ],
+    "pattern": "solid",
+    "style": "casual"
+  }
+]

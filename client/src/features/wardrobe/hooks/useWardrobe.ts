@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { cachedWardrobePhoto, loadWardrobePhoto } from '../data/photoCache'
+import { useEffect, useState } from 'react'
 import { useSession } from '../../auth/sessionContext'
 import { useRemote, useAction } from '../../live/hooks'
 import { shopApi, type WardrobeRecord } from '../../../services/shopApi'
@@ -10,7 +11,6 @@ export function useWardrobe() {
   const userId = session?.user.id
   const remote = useRemote(shopApi.wardrobe, userId ?? 'guest', !!session)
   const [photos, setPhotos] = useState<Record<string, { url: string; error?: boolean }>>({})
-  const photoExpiry = useRef(new Map<string, number>())
   const [photoVersion, setPhotoVersion] = useState(0)
   useEffect(() => {
     let active = true
@@ -20,11 +20,10 @@ export function useWardrobe() {
       while (active && next < rows.length) {
         const row = rows[next++]
         const key = `${userId}:${row.wardrobe_item_id}:${row.image_url}`
-        if ((photoExpiry.current.get(key) ?? 0) > Date.now()) continue
+        if (cachedWardrobePhoto(key)) continue
         try {
-          const photo = await shopApi.wardrobeImage(row.wardrobe_item_id)
+          const photo = await loadWardrobePhoto(key, row.wardrobe_item_id)
           if (active) {
-            photoExpiry.current.set(key, Date.now() + Math.max(0, photo.expires_in - 30) * 1000)
             setPhotos((current) => ({ ...current, [key]: { url: photo.url } }))
           }
         } catch {
@@ -37,7 +36,8 @@ export function useWardrobe() {
   }, [remote.data, userId, photoVersion])
   const action = useAction()
   const items: WardrobeItem[] = (remote.data ?? []).map((row) => {
-    const photo = photos[`${userId}:${row.wardrobe_item_id}:${row.image_url}`]
+    const key = `${userId}:${row.wardrobe_item_id}:${row.image_url}`
+    const photo = cachedWardrobePhoto(key) ?? photos[key]
     return { id: row.wardrobe_item_id, name: row.name, kind: isKind(row.clothing_type) ? row.clothing_type : row.category_id === 'shoes' ? 'shoes' : row.category_id === 'hats' ? 'hats' : row.category_id === 'dresses' ? 'dresses' : row.category_id === 'bottoms' ? 'pants' : 't-shirts',
       color: isColor(row.color) ? row.color : 'cream', rawColor: row.color ?? '', material: row.material ?? '', size: row.size ?? 'One size',
       image: photo?.url ?? '', imageError: photo?.error, addedAt: 0, record: row }

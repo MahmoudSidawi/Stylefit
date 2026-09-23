@@ -18,7 +18,7 @@ export function useOutfit(wardrobeId?: string) {
     return [...new Set(variants.map((v) => v.color))].map((color) => {
       const group = variants.filter((v) => v.color === color)
       return { id: product.product_id + ':' + color, productId: product.product_id, name: product.name, brand: 'StyleFit', material: product.description,
-        source: 'store' as const, slot: product.category_id === 'shoes' ? 'shoes' as const : product.category_id === 'hats' ? 'hat' as const : product.category_id === 'bottoms' ? 'anchor' as const : product.category_id === 'dresses' ? 'dress' as const : 'core' as const,
+        source: 'store' as const, clothingType: product.clothing_type, slot: product.category_id === 'shoes' ? 'shoes' as const : product.category_id === 'hats' ? 'hat' as const : product.category_id === 'bottoms' ? 'anchor' as const : product.category_id === 'dresses' ? 'dress' as const : 'core' as const,
         price: Number(group[0]?.price ?? 0), sizes: group.map((v) => v.size), image: group[0]?.image_url ?? '', detailImage: group[0]?.image_url ?? '', color, colorName: color,
         tone: 'neutral' as const, drape: 'soft' as const, occasions: ['work', 'weekend'] as Occasion[], variants: group }
     })

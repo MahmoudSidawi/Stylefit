@@ -1,3 +1,5 @@
+import { Pagination } from '../../../components/ui/Pagination'
+import { usePagination } from '../../../components/ui/usePagination'
 import { useEffect, useState } from 'react'
 import { StorefrontHeader } from '../../../components/layout/StorefrontHeader'
 import { StorefrontFooter } from '../../../components/layout/StorefrontFooter'
@@ -41,6 +43,7 @@ export default function WardrobePage() {
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
   )
+  const pagination = usePagination(visible, 8, JSON.stringify([query, category, session?.user.id]))
   useEffect(() => {
     document.title = 'Your Wardrobe — StyleFit'
     return () => {
@@ -159,7 +162,7 @@ export default function WardrobePage() {
             </p>
             {visible.length ? (
               <div className="wardrobe-grid">
-                {visible.map((item) => (
+                {pagination.items.map((item) => (
                   <WardrobeCard
                     key={item.id}
                     item={item}
@@ -201,6 +204,7 @@ export default function WardrobePage() {
                 </button>
               </div>
             ) : null}
+            <Pagination {...pagination} />
           </section></AccountGate>
         </div>
       </main>

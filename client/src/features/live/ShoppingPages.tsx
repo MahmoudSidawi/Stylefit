@@ -1,3 +1,5 @@
+import { Pagination } from '../../components/ui/Pagination'
+import { usePagination } from '../../components/ui/usePagination'
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useSession } from '../auth/sessionContext'
@@ -111,12 +113,14 @@ export function LiveWishlist() {
   const { session } = useSession()
   const saved = useRemote(shopApi.wishlist, session?.user.id ?? '', !!session)
   const products = saved.data?.filter((row) => row.products) ?? []
+  const pagination = usePagination(products, 8, session?.user.id)
   return <AccountLayout title="Saved favorites" description="The pieces you love, ready when you are.">
     {saved.loading && <p className="profile-notice" role="status">Loading your favorites...</p>}
     {saved.error && <div className="profile-notice profile-error" role="alert">{saved.error} <button className="text-button" onClick={saved.reload}>Try again</button></div>}
     {!!products.length && <>
       <section className="account-detail-card account-favorites-heading"><div className="profile-section-heading"><span className="profile-section-icon"><Icon name="heart" size={20} /></span><div><h2>Your collection</h2><p>{products.length} saved {products.length === 1 ? 'piece' : 'pieces'}. Choose a size or take a closer look.</p></div></div><Link to="/clothes">Explore clothes <Icon name="arrow" size={16} /></Link></section>
-      <div className="account-favorites-grid">{products.map((row) => <ProductTile key={row.product_id} product={row.products} saved />)}</div>
+      <div className="account-favorites-grid">{pagination.items.map((row) => <ProductTile key={row.product_id} product={row.products} saved />)}</div>
+      <Pagination {...pagination} />
     </>}
     {!saved.loading && !saved.error && !products.length && <section className="account-detail-card account-orders-empty"><span className="profile-section-icon"><Icon name="heart" size={24} /></span><h2>A place for your favorites.</h2><p>Save the pieces you love while exploring the collection. They’ll appear here.</p><Link className="button button-primary" to="/clothes">Explore the collection<Icon name="arrow" size={16} /></Link></section>}
   </AccountLayout>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CollectionCard } from './CollectionCard'
 import { Icon } from '../../../components/ui/Icon'
 import type { Product } from '../types'
 
@@ -30,8 +31,11 @@ export function ProductCard({
   const colors = [...new Set(originalProduct.variants?.map((v) => v.color) ?? [])]
   const [adding, setAdding] = useState(false)
   return (
-    <article className="product-card">
-      <div className="product-image">
+    <CollectionCard
+      title={<button onClick={() => onPreview(product)}>{product.name}</button>}
+      aside={<span>${product.price}</span>}
+      description={product.description}
+      image={<>
         <button
           className="image-preview"
           aria-label={`Preview ${product.name}`}
@@ -53,16 +57,8 @@ export function ProductCard({
           <Icon name="heart" size={17} />
         </button>
         {showNotes && product.note && <span className="pairing-note">{product.note}</span>}
-      </div>
-      <div className="product-meta">
-        <div className="product-title">
-          <h3>
-            <button onClick={() => onPreview(product)}>{product.name}</button>
-          </h3>
-          <span>${product.price}</span>
-        </div>
-        <p>{product.description}</p>
-      </div>
+      </>}
+    >
       {colors.length > 1 && <label className="product-color">Color<select aria-label={`Color for ${product.name}`} value={color} onChange={(event) => { setColor(event.target.value) }}>{colors.map((value) => <option key={value}>{value}</option>)}</select></label>}
       <fieldset className="size-selector">
         <legend className="sr-only">Size for {product.name}</legend>
@@ -95,6 +91,6 @@ export function ProductCard({
           <Icon name="bag" size={15} /> {soldOut ? 'Sold out' : adding ? 'Adding...' : 'Add to Bag'}
         </button>
       </div>
-    </article>
+    </CollectionCard>
   )
 }

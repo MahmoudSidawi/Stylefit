@@ -186,70 +186,19 @@
   color: var(--sf-muted);
 }
 .all-clothes-page .product-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-.all-clothes-page .product-title {
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.all-clothes-page .product-title h3 {
-  font-size: 18px;
-}
-.all-clothes-page .card-actions .button {
-  padding-inline: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sf-gap);
 }
 .all-clothes-page .catalogue-body {
   padding-top: 14px;
 }
 .all-clothes-page .store-container {
-  width: min(1440px, calc(100% - 48px));
+  width: min(1280px, calc(100% - 64px));
 }
 @media (min-width: 1101px) {
   .all-clothes-page .header-inner {
     min-height: 64px;
     padding-block: 8px;
-  }
-  .all-clothes-page .product-card {
-    padding: 8px;
-    border-radius: 10px;
-  }
-  .all-clothes-page .product-image {
-    height: clamp(110px, calc((100svh - 490px) / 2), 280px);
-    aspect-ratio: auto;
-    border-radius: 7px;
-  }
-  .all-clothes-page .product-image img {
-    object-fit: contain;
-    object-position: center;
-  }
-  .all-clothes-page .pairing-note {
-    display: none;
-  }
-  .all-clothes-page .product-meta {
-    margin-top: 6px;
-  }
-  .all-clothes-page .product-title {
-    flex-wrap: nowrap;
-  }
-  .all-clothes-page .product-title h3 {
-    font-size: 17px;
-  }
-  .all-clothes-page .product-meta p {
-    margin-top: 2px;
-  }
-  .all-clothes-page .size-selector {
-    margin-top: 6px;
-  }
-  .all-clothes-page .size-selector label {
-    height: 25px;
-  }
-  .all-clothes-page .card-actions {
-    padding-top: 8px;
-  }
-  .all-clothes-page .card-actions .button {
-    min-height: 32px;
-    padding-block: 6px;
   }
 }
 .best-sellers-heading {
@@ -345,3 +294,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Four cards share the space remaining beside the original filter sidebar. */
+.all-clothes-page .clothes-results { min-width: 0; }
+.all-clothes-page .product-title { flex-wrap: wrap; }
+.all-clothes-page .product-color select { max-width: 100%; }
