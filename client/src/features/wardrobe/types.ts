@@ -1,4 +1,4 @@
-import type { WardrobeRecord } from '../../services/shopApi'
+import type { Department, WardrobeRecord } from '../../services/shopApi'
 export type GarmentKind = 't-shirts' | 'shirts' | 'hoodies' | 'jeans' | 'pants' | 'shorts' | 'skirts' | 'dresses' | 'shoes' | 'hats'
 export type WardrobeCategory = 'all' | 'tops' | 'bottoms' | 'dresses' | 'shoes' | 'hats'
 export type GarmentColor =
@@ -15,6 +15,7 @@ export type GarmentColor =
   | 'sage'
   | 'blue'
 export type WardrobeItem = {
+  department?: Department
   imageError?: boolean
   record?: WardrobeRecord
   rawColor?: string

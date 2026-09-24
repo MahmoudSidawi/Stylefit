@@ -15,7 +15,8 @@
     ],
     "price": 25,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "everyday-shirt",
@@ -33,7 +34,8 @@
     ],
     "price": 39,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "men"
   },
   {
     "slug": "classic-hoodie",
@@ -51,7 +53,8 @@
     ],
     "price": 49,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "straight-jeans",
@@ -69,7 +72,8 @@
     ],
     "price": 55,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "men"
   },
   {
     "slug": "everyday-pants",
@@ -87,7 +91,8 @@
     ],
     "price": 45,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "men"
   },
   {
     "slug": "cotton-shorts",
@@ -105,7 +110,8 @@
     ],
     "price": 29,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "midi-skirt",
@@ -123,7 +129,8 @@
     ],
     "price": 35,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "everyday-dress",
@@ -141,7 +148,8 @@
     ],
     "price": 59,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "relaxed-tee",
@@ -159,7 +167,8 @@
     ],
     "price": 22,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "pocket-tee",
@@ -177,7 +186,8 @@
     ],
     "price": 28,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "oxford-shirt",
@@ -195,7 +205,8 @@
     ],
     "price": 44,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "men"
   },
   {
     "slug": "linen-shirt",
@@ -213,7 +224,8 @@
     ],
     "price": 48,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "zip-hoodie",
@@ -231,7 +243,8 @@
     ],
     "price": 54,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "relaxed-hoodie",
@@ -249,7 +262,8 @@
     ],
     "price": 46,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "slim-jeans",
@@ -267,7 +281,8 @@
     ],
     "price": 59,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "wide-jeans",
@@ -285,7 +300,8 @@
     ],
     "price": 62,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "men"
   },
   {
     "slug": "chino-pants",
@@ -303,7 +319,8 @@
     ],
     "price": 49,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "men"
   },
   {
     "slug": "relaxed-pants",
@@ -321,7 +338,8 @@
     ],
     "price": 42,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "men"
   },
   {
     "slug": "chino-shorts",
@@ -339,7 +357,8 @@
     ],
     "price": 32,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "weekend-shorts",
@@ -357,7 +376,8 @@
     ],
     "price": 26,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "a-line-skirt",
@@ -375,7 +395,8 @@
     ],
     "price": 39,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "pleated-skirt",
@@ -393,7 +414,8 @@
     ],
     "price": 44,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "midi-dress",
@@ -411,7 +433,8 @@
     ],
     "price": 65,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "shirt-dress",
@@ -429,7 +452,8 @@
     ],
     "price": 69,
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "textured-day-dress",
@@ -447,15 +471,16 @@
       "XL"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
-    "slug": "striped-day-dress",
-    "name": "Neutral Striped Day Dress",
+    "slug": "black-casual-sundress",
+    "name": "Black Casual Sundress",
     "category": "dresses",
     "kind": "dresses",
-    "asset": "dress-44",
-    "color": "grey",
+    "asset": "black-sundress",
+    "color": "black",
     "price": 59,
     "sizes": [
       "XS",
@@ -464,15 +489,16 @@
       "L",
       "XL"
     ],
-    "pattern": "striped",
-    "style": "casual"
+    "pattern": "solid",
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "demo-running-shoes",
-    "name": "Black High-top Canvas Sneakers",
+    "name": "Black Canvas High-tops",
     "category": "shoes",
     "kind": "shoes",
-    "asset": "converse-0",
+    "asset": "shoe-single-right-canvas",
     "color": "black",
     "price": 65,
     "sizes": [
@@ -483,15 +509,16 @@
       "42"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "charcoal-canvas-sneakers",
-    "name": "Charcoal Canvas Sneakers",
+    "name": "Grey Trail Running Shoes",
     "category": "shoes",
     "kind": "shoes",
-    "asset": "converse-6",
-    "color": "charcoal",
+    "asset": "shoe-single-right-running",
+    "color": "grey",
     "price": 65,
     "sizes": [
       "38",
@@ -501,15 +528,16 @@
       "42"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "navy-canvas-sneakers",
-    "name": "Navy Canvas Sneakers",
+    "name": "Black Suede Loafers",
     "category": "shoes",
     "kind": "shoes",
-    "asset": "converse-9",
-    "color": "navy",
+    "asset": "shoe-single-right-loafer",
+    "color": "black",
     "price": 65,
     "sizes": [
       "38",
@@ -519,15 +547,16 @@
       "42"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "men"
   },
   {
     "slug": "classic-canvas-sneakers",
-    "name": "Classic Black Canvas Sneakers",
+    "name": "Tan Lace-up Boots",
     "category": "shoes",
     "kind": "shoes",
-    "asset": "converse-19",
-    "color": "black",
+    "asset": "shoe-single-left-boot",
+    "color": "tan",
     "price": 65,
     "sizes": [
       "38",
@@ -537,15 +566,16 @@
       "42"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "low-canvas-sneakers",
-    "name": "Black Low-top Canvas Sneakers",
+    "name": "Tan Flat Sandals",
     "category": "shoes",
     "kind": "shoes",
-    "asset": "converse-32",
-    "color": "black",
+    "asset": "shoe-single-right-sandal",
+    "color": "tan",
     "price": 59,
     "sizes": [
       "38",
@@ -555,7 +585,8 @@
       "42"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "women"
   },
   {
     "slug": "demo-baseball-cap",
@@ -569,7 +600,8 @@
       "One size"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "navy-baseball-cap",
@@ -583,7 +615,8 @@
       "One size"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "grey-trucker-cap",
@@ -597,7 +630,8 @@
       "One size"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "blue-baseball-cap",
@@ -611,7 +645,8 @@
       "One size"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   },
   {
     "slug": "stone-baseball-cap",
@@ -625,6 +660,7 @@
       "One size"
     ],
     "pattern": "solid",
-    "style": "casual"
+    "style": "casual",
+    "department": "unisex"
   }
 ]

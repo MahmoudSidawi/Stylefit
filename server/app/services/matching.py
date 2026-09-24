@@ -76,8 +76,8 @@ async def selected_items(body: MatchRequest, user: Identity):
                           **{key: record.get(key) for key in ('name', 'category_id', 'clothing_type', 'color', 'style', 'pattern', 'material', 'size')}})
             wardrobe.append((index + 1, record))
     categories = {item.get('category_id') for item in items}
-    if 'dresses' in categories and 'bottoms' in categories:
-        raise HTTPException(422, 'A dress cannot be combined with jeans or other bottoms. Remove one before checking the outfit.')
+    if 'dresses' in categories and categories.intersection({'tops', 'bottoms'}):
+        raise HTTPException(422, 'A dress cannot be combined with tops or bottoms. Remove one before checking the outfit.')
     # Resolve ownership of ALL selections before downloading or transmitting any photo.
     images = []
     for index, record in wardrobe:

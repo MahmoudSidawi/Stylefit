@@ -1,6 +1,6 @@
 import { shopApi } from '../../../services/shopApi'
 
-type Photo = { url: string; expiresAt: number }
+type Photo = { url: string; expiresAt: number; error?: boolean }
 const cache = new Map<string, Photo>()
 const pending = new Map<string, Promise<Photo>>()
 let generation = 0

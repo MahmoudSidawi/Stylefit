@@ -1,3 +1,5 @@
+import { DepartmentFilter, type DepartmentSelection } from '../../../components/ui/DepartmentFilter'
+import { matchesDepartment } from '../../../utils/departments'
 import { Pagination } from '../../../components/ui/Pagination'
 import { usePagination } from '../../../components/ui/usePagination'
 import { useEffect, useState } from 'react'
@@ -38,6 +40,7 @@ export default function CataloguePage({
       { replace: true },
     )
   }
+  const [department, setDepartment] = useState<DepartmentSelection>('all')
   const [category, setCategory] = useState<Category>('all')
   const [sort, setSort] = useState<SortOrder>('editorial')
   const [showNotes, setShowNotes] = useState(false)
@@ -64,7 +67,7 @@ export default function CataloguePage({
     void action.run(() => favorites.includes(id) ? shopApi.unsaveProduct(id) : shopApi.saveProduct(id))
   }
   const hasFilters =
-    query !== '' ||
+    department !== 'all' || query !== '' ||
     category !== 'all' ||
     savedOnly ||
     maxPrice < 100 ||
@@ -72,7 +75,7 @@ export default function CataloguePage({
   const visibleProducts = products
     .filter(
       (product) =>
-        (category === 'all' || product.category === category) &&
+        matchesDepartment(product.department, department) && (category === 'all' || product.category === category) &&
         `${product.name} ${product.description}`
           .toLowerCase()
           .includes(query.trim().toLowerCase()) &&
@@ -88,7 +91,7 @@ export default function CataloguePage({
           : 0,
     )
 
-  const pagination = usePagination(visibleProducts, allClothes ? 8 : 4, JSON.stringify([allClothes, query, category, sort, savedOnly, maxPrice, filterSize]))
+  const pagination = usePagination(visibleProducts, allClothes ? 8 : 4, JSON.stringify([allClothes, department, query, category, sort, savedOnly, maxPrice, filterSize]))
 
   useEffect(() => {
     document.title = allClothes
@@ -108,6 +111,7 @@ export default function CataloguePage({
   function resetFilters() {
     setQuery('')
     setCategory('all')
+    setDepartment('all')
     setSavedOnly(false)
     setMaxPrice(100)
     setFilterSize('all')
@@ -206,7 +210,9 @@ export default function CataloguePage({
             {allClothes && (
               <CatalogueFilters
                 categories={categories}
-                products={products}
+                products={products.filter((product) => matchesDepartment(product.department, department))}
+                department={department}
+                setDepartment={setDepartment}
                 category={category}
                 setCategory={setCategory}
                 maxPrice={maxPrice}
@@ -251,6 +257,7 @@ export default function CataloguePage({
                   </Link>
                 </div>
               )}
+              {!allClothes && <DepartmentFilter value={department} onChange={setDepartment} />}
               {hasFilters && (
                 <div className="results-summary">
                   <p role="status">

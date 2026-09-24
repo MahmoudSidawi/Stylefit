@@ -15,7 +15,7 @@ export async function loadCatalogue() {
 export function toProduct(product: StoreProduct): Product {
   const variants = (product.product_variants ?? []).filter((variant) => variant.is_active)
   return { id: product.product_id, name: product.name, description: product.description,
-    category: product.category_id, price: Number(variants[0]?.price ?? 0),
+    category: product.category_id, department: product.department, price: Number(variants[0]?.price ?? 0),
     sizes: [...new Set(variants.map((variant) => variant.size))],
     image: variants[0]?.image_url ?? '', note: [product.style, product.pattern].filter(Boolean).join(' / '), variants }
 }

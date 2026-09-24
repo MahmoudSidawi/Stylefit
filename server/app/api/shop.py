@@ -38,8 +38,8 @@ async def save_look(body: SavedLookInput, user: Identity = Depends(current_user)
         if category is None:
             raise HTTPException(404, 'A selected garment is unavailable.')
         categories.add(category)
-    if 'dresses' in categories and 'bottoms' in categories:
-        raise HTTPException(422, 'A dress cannot be combined with jeans or other bottoms.')
+    if 'dresses' in categories and categories.intersection({'tops', 'bottoms'}):
+        raise HTTPException(422, 'A dress cannot be combined with tops or bottoms.')
     rows = await db.request('POST', 'rest/v1/saved_looks', user.token,
                             body={**body.model_dump(), 'user_id': user.user_id})
     return rows[0]

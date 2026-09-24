@@ -1,3 +1,4 @@
+import { DepartmentFilter, type DepartmentSelection } from '../../../components/ui/DepartmentFilter'
 import { useState } from 'react'
 import { Icon } from '../../../components/ui/Icon'
 import type { Category, Product } from '../types'
@@ -5,6 +6,8 @@ import type { Category, Product } from '../types'
 type Props = {
   categories: { id: Category; label: string; description?: string }[]
   products: Product[]
+  department: DepartmentSelection
+  setDepartment: (value: DepartmentSelection) => void
   category: Category
   setCategory: (category: Category) => void
   maxPrice: number
@@ -20,6 +23,8 @@ type Props = {
 export function CatalogueFilters({
   categories,
   products,
+  department,
+  setDepartment,
   category,
   setCategory,
   maxPrice,
@@ -56,6 +61,7 @@ export function CatalogueFilters({
             Reset all
           </button>
         </div>
+        <DepartmentFilter value={department} onChange={setDepartment} />
         <fieldset className="clothes-filter-group">
           <legend>Category</legend>
           {categories.map((item) => (

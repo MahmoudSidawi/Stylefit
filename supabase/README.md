@@ -54,3 +54,7 @@ the photo catalogue and sample customer.
 ## Live homepage and saved outfits
 
 Run `migrations/202609230002_live_content_looks.sql` on existing projects. Then run `server/scripts/seed_storefront.py` using the configured server environment. Runtime catalogue data requires Supabase; sample files are used only by explicit import scripts.
+
+## Clothing departments and optimized photos
+
+Existing projects: apply `migrations/202609240001_webp_images.sql` and `migrations/202609240002_clothing_departments.sql`. Fresh installations include both in `setup.sql`. Departments are stored on products and wardrobe items; Men and Women filters include Unisex pieces. Administrators can change product departments, and customers can classify their own wardrobe items.

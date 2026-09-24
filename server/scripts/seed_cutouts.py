@@ -8,6 +8,7 @@ in versioned object paths so existing uploads remain recoverable.
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 import json
+import hashlib
 from pathlib import Path
 import sys
 from uuid import NAMESPACE_URL, uuid5
@@ -18,6 +19,7 @@ from dotenv import dotenv_values
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'server'))
 from app.core.config import settings
+from app.services.photo_assets import display_photo
 
 
 def uid(value):
@@ -29,6 +31,10 @@ def main():
     assets = ROOT / 'server/scripts/fixtures/cutouts'
     assert all((assets / (row['asset'] + '.png')).exists() for row in records)
     assert all((assets / (row['asset'] + '.png')).stat().st_size < 5 * 1024 * 1024 for row in records), 'Photo exceeds the storage limit'
+    source_photos = {asset: (assets / (asset + '.png')).read_bytes() for asset in {row['asset'] for row in records}}
+    photos = {asset: display_photo(content) for asset, content in source_photos.items()}
+    filenames = {asset: asset + '-' + hashlib.sha256(content).hexdigest()[:12] + '.webp' for asset, content in photos.items()}
+    print(json.dumps({'original_bytes': sum(map(len, source_photos.values())), 'optimized_bytes': sum(map(len, photos.values())), 'largest_photo_bytes': max(map(len, photos.values()))}), flush=True)
     base = settings.supabase_url.rstrip('/')
     key = settings.supabase_secret_key.get_secret_value()
     with httpx.Client(base_url=base, timeout=90, headers={'apikey': key, 'Authorization': 'Bearer ' + key}) as client:
@@ -57,9 +63,9 @@ def main():
             backup.write_text(json.dumps({'products': previous_products, 'variants': previous_variants, 'wardrobe': previous_wardrobe}, indent=2))
 
         def upload(asset):
-            object_key = f'clothing-cutouts-v1/{asset}.png'
-            request('POST', '/storage/v1/object/products/' + object_key, content=(assets / (asset + '.png')).read_bytes(),
-                    headers={'Content-Type': 'image/png', 'x-upsert': 'true'})
+            object_key = f'clothing-cutouts-v2/{filenames[asset]}'
+            request('POST', '/storage/v1/object/products/' + object_key, content=photos[asset],
+                    headers={'Content-Type': 'image/webp', 'x-upsert': 'true', 'Cache-Control': 'max-age=31536000'})
             return asset, base + '/storage/v1/object/public/products/' + object_key
 
         with ThreadPoolExecutor(max_workers=4) as pool:
@@ -70,7 +76,7 @@ def main():
         for row in records:
             product_id = uid('stylefit/' + row['slug'])
             products.append({'product_id': product_id, 'name': row['name'], 'category_id': row['category'],
-                             'clothing_type': row['kind'], 'style': row['style'], 'pattern': row['pattern'], 'is_active': True,
+                             'clothing_type': row['kind'], 'department': row['department'], 'style': row['style'], 'pattern': row['pattern'], 'is_active': True,
                              'description': 'An everyday casual piece from the coordinated essentials collection.'})
             if product_id not in existing_ids:
                 for size in row['sizes']:
@@ -102,12 +108,12 @@ def main():
 
         def save_wardrobe(pair):
             item_id, row = pair
-            object_key = f"{user_id}/cutout-v1-{row['slug']}.png"
-            request('POST', '/storage/v1/object/wardrobe/' + object_key, content=(assets / (row['asset'] + '.png')).read_bytes(),
-                    headers={'Content-Type': 'image/png', 'x-upsert': 'true'})
+            object_key = f"{user_id}/cutout-v2-{filenames[row['asset']]}"
+            request('POST', '/storage/v1/object/wardrobe/' + object_key, content=photos[row['asset']],
+                    headers={'Content-Type': 'image/webp', 'x-upsert': 'true', 'Cache-Control': 'max-age=31536000'})
             request('POST', '/rest/v1/wardrobe_items', headers={'Prefer': 'resolution=merge-duplicates'}, json={
                 'wardrobe_item_id': item_id, 'user_id': user_id, 'name': row['name'], 'category_id': row['category'],
-                'clothing_type': row['kind'], 'color': row['color'], 'size': '40' if row['category'] == 'shoes' else 'One size' if row['category'] == 'hats' else 'M',
+                'clothing_type': row['kind'], 'department': row['department'], 'color': row['color'], 'size': '40' if row['category'] == 'shoes' else 'One size' if row['category'] == 'hats' else 'M',
                 'style': row['style'], 'pattern': row['pattern'], 'image_url': object_key})
         with ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(save_wardrobe, wardrobe_rows))

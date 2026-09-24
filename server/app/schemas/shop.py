@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+Department = Literal['men', 'women', 'unisex']
 Category = Literal['tops', 'bottoms', 'dresses', 'shoes', 'hats']
 Kind = Literal['t-shirts', 'shirts', 'hoodies', 'jeans', 'pants', 'shorts', 'skirts', 'dresses', 'shoes', 'hats']
 Text = Annotated[str, Field(min_length=1, max_length=120)]
@@ -77,6 +78,7 @@ class OrderUpdate(Input):
 
 
 class WardrobeInput(Input):
+    department: Department = 'unisex'
     category_id: Category
     name: Text
     # Private bucket object key; never a public image URL.
@@ -105,6 +107,7 @@ class VariantInput(Input):
 
 
 class ProductInput(Input):
+    department: Department = 'unisex'
     name: Text
     category_id: Category
     clothing_type: Kind

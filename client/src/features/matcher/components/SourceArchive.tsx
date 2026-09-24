@@ -1,6 +1,8 @@
+import { DepartmentFilter, type DepartmentSelection } from '../../../components/ui/DepartmentFilter'
+import { matchesDepartment } from '../../../utils/departments'
 import { shopApi, type ClothingCategory } from '../../../services/shopApi'
 import { useRemote } from '../../live/hooks'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Icon } from '../../../components/ui/Icon'
 import type { ArchiveSource, Garment, Selection, Slot } from '../types'
 
@@ -29,12 +31,13 @@ export function SourceArchive({
   selection,
   onStage,
 }: Props) {
+  const [department, setDepartment] = useState<DepartmentSelection>('all')
   const categories = useRemote(shopApi.categories, 'categories')
   const filters: { id: ArchiveFilter; label: string }[] = [{ id: 'all', label: 'All' }, ...(categories.data ?? []).map((row) => ({ id: categorySlots[row.category_id], label: row.name }))]
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const visible = garments.filter(
     (item) =>
-      item.source === source &&
+      item.source === source && matchesDepartment(item.department, department) &&
       (filter === 'all' || item.slot === filter) &&
       `${item.name} ${item.brand} ${item.material}`
         .toLowerCase()
@@ -88,6 +91,7 @@ export function SourceArchive({
           </button>
         ))}
       </div>
+      <DepartmentFilter value={department} onChange={setDepartment} />
       <div className="archive-filters" aria-label="Archive category">
         {filters.map((item) => (
           <button
@@ -154,6 +158,7 @@ export function SourceArchive({
               className="text-button"
               onClick={() => {
                 setFilter('all')
+                setDepartment('all')
                 onClearSearch()
               }}
             >
@@ -164,8 +169,9 @@ export function SourceArchive({
       </div>
       <p className="archive-help">
         <Icon name="info" size={13} /> One piece per category. Adding another
-        piece in the same category replaces the current one. Dresses and bottoms
-        replace each other and cannot be worn together in an outfit.
+        piece in the same category replaces the current one. A dress replaces
+        both the top and bottom. Adding a top or bottom removes the dress.
+        Shoes and hats can stay selected.
       </p>
       {source === 'wardrobe' && (
         <p className="archive-demo-note">

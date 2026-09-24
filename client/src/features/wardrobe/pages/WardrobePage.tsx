@@ -1,3 +1,5 @@
+import { DepartmentFilter, type DepartmentSelection } from '../../../components/ui/DepartmentFilter'
+import { matchesDepartment } from '../../../utils/departments'
 import { Pagination } from '../../../components/ui/Pagination'
 import { usePagination } from '../../../components/ui/usePagination'
 import { useEffect, useState } from 'react'
@@ -32,18 +34,19 @@ export default function WardrobePage() {
   const ai = useAction()
   const [suggestion, setSuggestion] = useState<{ item: WardrobeItem; analysis: GarmentAnalysis } | null>(null)
   const [query, setQuery] = useState('')
+  const [department, setDepartment] = useState<DepartmentSelection>('all')
   const [category, setCategory] = useState<WardrobeCategory>('all')
   const [dialog, setDialog] = useState<WardrobeDialog>(null)
   const [message, setMessage] = useState('')
   const [dropError, setDropError] = useState('')
   const visible = wardrobe.items.filter(
     (item) =>
-      (category === 'all' || kinds[item.kind].category === category) &&
+      matchesDepartment(item.department, department) && (category === 'all' || kinds[item.kind].category === category) &&
       `${item.name} ${item.material} ${colors[item.color].label} ${kinds[item.kind].label}`
         .toLowerCase()
         .includes(query.trim().toLowerCase()),
   )
-  const pagination = usePagination(visible, 8, JSON.stringify([query, category, session?.user.id]))
+  const pagination = usePagination(visible, 8, JSON.stringify([query, category, department, session?.user.id]))
   useEffect(() => {
     document.title = 'Your Wardrobe — StyleFit'
     return () => {
@@ -64,6 +67,7 @@ export default function WardrobePage() {
     if (success) {
       setQuery('')
       setCategory('all')
+      setDepartment('all')
       setMessage(
         id
           ? 'Garment details updated.'
@@ -128,6 +132,7 @@ export default function WardrobePage() {
             className="wardrobe-collection"
             aria-label="Your clothing collection"
           >
+            <DepartmentFilter value={department} onChange={setDepartment} />
             <div className="wardrobe-filters">
               <div>
                 <span className="overline">Catalog filter</span>
@@ -194,6 +199,7 @@ export default function WardrobePage() {
                       ? () => {
                           setQuery('')
                           setCategory('all')
+                          setDepartment('all')
                         }
                       : openAdd
                   }

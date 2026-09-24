@@ -1,3 +1,5 @@
+import { DepartmentFilter, type DepartmentSelection } from '../../components/ui/DepartmentFilter'
+import { matchesDepartment } from '../../utils/departments'
 import { Pagination } from '../../components/ui/Pagination'
 import { usePagination } from '../../components/ui/usePagination'
 import { useState } from 'react'
@@ -112,9 +114,11 @@ export function LiveCheckout() {
 export function LiveWishlist() {
   const { session } = useSession()
   const saved = useRemote(shopApi.wishlist, session?.user.id ?? '', !!session)
-  const products = saved.data?.filter((row) => row.products) ?? []
-  const pagination = usePagination(products, 8, session?.user.id)
+  const [department, setDepartment] = useState<DepartmentSelection>('all')
+  const products = saved.data?.filter((row) => row.products && matchesDepartment(row.products.department, department)) ?? []
+  const pagination = usePagination(products, 8, JSON.stringify([session?.user.id, department]))
   return <AccountLayout title="Saved favorites" description="The pieces you love, ready when you are.">
+    <DepartmentFilter value={department} onChange={setDepartment} />
     {saved.loading && <p className="profile-notice" role="status">Loading your favorites...</p>}
     {saved.error && <div className="profile-notice profile-error" role="alert">{saved.error} <button className="text-button" onClick={saved.reload}>Try again</button></div>}
     {!!products.length && <>

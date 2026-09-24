@@ -1,6 +1,7 @@
+import { DepartmentSelect } from '../../components/ui/DepartmentFilter'
 import { useState } from 'react'
 import { useSession } from '../auth/sessionContext'
-import { shopApi, type OrderStatus, type StoreProduct, type Variant } from '../../services/shopApi'
+import { shopApi, type Department, type OrderStatus, type StoreProduct, type Variant } from '../../services/shopApi'
 import { Notice } from './shared'
 import { AdminLayout } from '../admin/AdminAccess'
 import { useAction, useRemote } from './hooks'
@@ -30,6 +31,7 @@ function ProductEditor({ product }: { product: StoreProduct }) {
     <form className="live-form" onSubmit={(e) => { e.preventDefault(); void action.run(() => shopApi.updateProduct(draft), 'Product saved.') }}>
       <label>Name<input required maxLength={120} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></label>
       <label>Description<textarea maxLength={3000} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></label>
+      <DepartmentSelect value={draft.department} onChange={(department) => setDraft({ ...draft, department })} />
       <label>Clothing type<select value={draft.clothing_type} onChange={(e) => setDraft({ ...draft, clothing_type: e.target.value, category_id: clothingKinds[e.target.value as keyof typeof clothingKinds] })}>{Object.keys(clothingKinds).map((type) => <option key={type}>{type}</option>)}</select></label>
       <label>Style<input required value={draft.style} onChange={(e) => setDraft({ ...draft, style: e.target.value })} /></label>
       <label>Pattern<input required value={draft.pattern} onChange={(e) => setDraft({ ...draft, pattern: e.target.value })} /></label>
@@ -55,7 +57,7 @@ export function LiveAdminProducts() {
   const [page, setPage] = useState(0)
   const [editing, setEditing] = useState<StoreProduct | null>(null)
   const [adding, setAdding] = useState(false)
-  const initial = { name: '', description: '', clothing_type: 't-shirts', style: 'casual', pattern: 'solid', sizes: '', color: '', price: '', stock: '', image_url: '' }
+  const initial = { department: 'unisex' as Department, name: '', description: '', clothing_type: 't-shirts', style: 'casual', pattern: 'solid', sizes: '', color: '', price: '', stock: '', image_url: '' }
   const [draft, setDraft] = useState(initial)
   const [photo, setPhoto] = useState<File | null>(null)
   const all = products.data ?? []
@@ -68,7 +70,7 @@ export function LiveAdminProducts() {
       if (!sizes.length) throw new Error('Enter at least one size.')
       const imageUrl = photo ? (await shopApi.uploadProductImage(photo)).image_url : draft.image_url
       if (!imageUrl) throw new Error('Upload a product photo or enter its URL.')
-      await shopApi.createProduct({ name: draft.name, description: draft.description, clothing_type: draft.clothing_type,
+      await shopApi.createProduct({ department: draft.department, name: draft.name, description: draft.description, clothing_type: draft.clothing_type,
         category_id: clothingKinds[draft.clothing_type as keyof typeof clothingKinds], style: draft.style, pattern: draft.pattern, is_active: true,
         variants: sizes.map((size) => ({ size, color: draft.color, price: Number(draft.price), stock_quantity: Number(draft.stock), image_url: imageUrl, is_active: true })) })
       setDraft(initial); setPhoto(null)
@@ -87,6 +89,7 @@ export function LiveAdminProducts() {
     </section>
     {adding && <Dialog title="Add product" onClose={() => { if (!action.busy) setAdding(false) }} wide><div className="admin-editor"><Notice {...action} /><form className="live-form" onSubmit={create}>
       {(['name', 'description', 'style', 'pattern', 'sizes', 'color', 'image_url'] as const).map((field) => <label key={field}>{field === 'image_url' ? 'Image URL' : field === 'sizes' ? 'Sizes separated by commas' : field[0].toUpperCase() + field.slice(1)}<input required={field !== 'image_url' || !photo} value={draft[field]} onChange={(e) => setDraft({ ...draft, [field]: e.target.value })} /></label>)}
+      <DepartmentSelect value={draft.department} onChange={(department) => setDraft({ ...draft, department })} />
       <label>Clothing type<select value={draft.clothing_type} onChange={(e) => setDraft({ ...draft, clothing_type: e.target.value })}>{Object.keys(clothingKinds).map((type) => <option key={type}>{type}</option>)}</select></label>
       <label>Upload product photo (optional)<input type="file" accept="image/jpeg,image/png" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} /></label>
       <label>Price<input required type="number" min="0.01" step="0.01" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} /></label>

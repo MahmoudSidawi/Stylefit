@@ -1,3 +1,4 @@
+export type Department = 'men' | 'women' | 'unisex'
 import type { SavedLook } from '../features/matcher/types'
 import { apiRequest } from './api'
 
@@ -13,6 +14,7 @@ export type Variant = {
   price: number; stock_quantity: number; image_url: string; is_active: boolean
 }
 export type StoreProduct = {
+  department?: Department
   product_id: string; category_id: ClothingCategory; name: string; description: string
   clothing_type: string; style: string; pattern: string; is_active: boolean; product_variants: Variant[]
 }
@@ -41,6 +43,7 @@ export type Order = {
 }
 export type DeliveryDetails = { recipient_name: string; phone: string; delivery_address: string }
 export type WardrobeRecord = {
+  department?: Department
   wardrobe_item_id: string; category_id: ClothingCategory; name: string; image_url: string; color: string | null
   clothing_type?: string | null; style?: string | null; pattern?: string | null; material?: string | null; size?: string | null
 }
@@ -102,8 +105,8 @@ export const shopApi = {
   createProduct: (product: Omit<StoreProduct, 'product_id' | 'product_variants'> & { variants: Omit<Variant, 'variant_id' | 'product_id'>[] }) =>
     apiRequest<string>('/api/admin/products', json('POST', product)),
   updateProduct: (product: StoreProduct) => {
-    const { product_id, name, category_id, clothing_type, description, style, pattern, is_active } = product
-    return apiRequest(`/api/admin/products/${id(product_id)}`, json('PUT', { name, category_id, clothing_type, description, style, pattern, is_active }))
+    const { product_id, department, name, category_id, clothing_type, description, style, pattern, is_active } = product
+    return apiRequest(`/api/admin/products/${id(product_id)}`, json('PUT', { department, name, category_id, clothing_type, description, style, pattern, is_active }))
   },
   updateVariant: (variant: Variant) => {
     const { variant_id, size, color, price, stock_quantity, image_url, is_active } = variant

@@ -37,7 +37,7 @@ before(async () => {
     grant usage on schema storage to authenticated;
     grant select, insert, delete on storage.objects to authenticated;
   `)
-  for (const migration of ['202609210001_shop.sql', '202609210002_sample_catalogue.sql', '202609210003_backend_completion.sql', '202609210004_expanded_catalogue.sql', '202609210005_catalogue_search.sql', '202609220001_admin_accounts.sql', '202609230001_shoes_hats.sql', '202609230002_live_content_looks.sql']) {
+  for (const migration of ['202609210001_shop.sql', '202609210002_sample_catalogue.sql', '202609210003_backend_completion.sql', '202609210004_expanded_catalogue.sql', '202609210005_catalogue_search.sql', '202609220001_admin_accounts.sql', '202609230001_shoes_hats.sql', '202609230002_live_content_looks.sql', '202609240002_clothing_departments.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${migration}`, import.meta.url), 'utf8'))
   }
   for (const id of [alice, bob, admin]) {
@@ -254,4 +254,15 @@ test('cash-on-delivery starts unpaid and only admin can record collection', asyn
   await db.query("select public.update_order_status($1, 'delivered', true)", [placed])
   await identity(alice)
   assert.equal(await scalar('select is_paid from public.orders where order_id = $1', [placed]), true)
+})
+
+
+test('merchandise departments persist and the migration preserves existing choices', async () => {
+  await identity(admin)
+  const id = await scalar(`select public.create_product($1::jsonb, $2::jsonb)`, [JSON.stringify({name:'Women shirt', category_id:'tops', clothing_type:'shirts', department:'women'}), JSON.stringify([{size:'M',color:'white',price:25,stock_quantity:4,image_url:'/clothes/test.svg'}])])
+  assert.equal(await scalar('select department from public.products where product_id=$1', [id]), 'women')
+  await db.exec('reset role')
+  await db.exec(await readFile(new URL('../migrations/202609240002_clothing_departments.sql', import.meta.url), 'utf8'))
+  assert.equal(await scalar('select department from public.products where product_id=$1', [id]), 'women')
+  await assert.rejects(db.query("update public.products set department='invalid' where product_id=$1", [id]), /products_department_check/)
 })

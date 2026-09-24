@@ -1,8 +1,9 @@
-import type { Variant } from '../../services/shopApi'
+import type { Department, Variant } from '../../services/shopApi'
 export type Category =
   'all' | 'tops' | 'bottoms' | 'dresses' | 'shoes' | 'hats'
 
 export type Product = {
+  department?: Department
   variants?: Variant[]
   id: string
   name: string

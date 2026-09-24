@@ -4,7 +4,7 @@ const userId = '11111111-1111-4111-8111-111111111111'
 const products = ['Cotton T-shirt', 'Straight Jeans', 'Everyday Dress'].map((name, i) => ({
   product_id: `00000000-0000-4000-8000-00000000000${i}`, name, description: 'An everyday basic.',
   category_id: ['tops', 'bottoms', 'dresses'][i], clothing_type: ['t-shirts', 'jeans', 'dresses'][i],
-  style: 'casual', pattern: 'solid', is_active: true,
+  department: ['unisex', 'men', 'women'][i], style: 'casual', pattern: 'solid', is_active: true,
   product_variants: [{ variant_id: `00000000-0000-4000-9000-00000000000${i}`, size: 'M', color: 'Cream',
     price: 25 + i * 10, stock_quantity: 20, image_url: `/clothes/${['basic-tee', 'straight-jeans', 'everyday-dress'][i]}.svg`, is_active: true }],
 }))
@@ -18,17 +18,18 @@ test('garment-only photos align by clothing type without silhouette clipping', a
     ['Black Skirt', 'bottoms', 'skirts', 'skirt-silk'],
     ['Denim Shorts', 'bottoms', 'shorts', 'jeans-6'],
     ['Day Dress', 'dresses', 'dresses', 'dress-17'],
-    ['Canvas Shoes', 'shoes', 'shoes', 'converse-0'],
+    ['Black Canvas High-tops', 'shoes', 'shoes', 'shoe-single-right-canvas'],
     ['White Cap', 'hats', 'hats', 'cap-1'],
   ].map(([name, category_id, clothing_type, asset], index) => ({ ...products[0], product_id: `cutout-${index}`, name, category_id, clothing_type,
     product_variants: [{ ...products[0].product_variants[0], image_url: `/cutout-test/${asset}.png` }] }))
   await page.route('**/api/products?**', (route) => route.fulfill({ json: { items: entries, total: entries.length, limit: 100, offset: 0, mode: 'live' } }))
   await page.route('**/cutout-test/*', (route) => route.fulfill({ path: `../server/scripts/fixtures/cutouts/${new URL(route.request().url()).pathname.split('/').at(-1)}`, contentType: 'image/png' }))
   await page.goto('/matcher')
-  for (const name of ['White Tee', 'Blue Jeans', 'Canvas Shoes', 'White Cap']) await page.getByRole('button', { name: `Add ${name} to canvas`, exact: true }).click()
+  for (const name of ['White Tee', 'Blue Jeans', 'Black Canvas High-tops', 'White Cap']) await page.getByRole('button', { name: `Add ${name} to canvas`, exact: true }).click()
   const canvas = page.locator('.outfit-person')
   await expect(canvas.locator('[data-garment-slot]')).toHaveCount(4)
   await expect(canvas.locator('clipPath')).toHaveCount(0)
+  await expect(canvas.locator('[data-shoe-foot]')).toHaveCount(2)
   await expect(canvas.locator('[data-garment-slot="core"] > svg')).not.toHaveAttribute('viewBox', '0 0 300 400')
   await page.locator('.person-preview').screenshot({ path: '../docs/previews/garment-only-outfit.png' })
   await page.getByRole('button', { name: 'Add Black Skirt to canvas', exact: true }).click()
@@ -39,6 +40,42 @@ test('garment-only photos align by clothing type without silhouette clipping', a
   await page.getByRole('button', { name: 'Add Day Dress to canvas', exact: true }).click()
   await expect(canvas.locator('[data-garment-slot="anchor"]')).toHaveCount(0)
   await expect(canvas.locator('[data-garment-slot="dress"]')).toHaveCount(1)
+  await expect(canvas.locator('[data-garment-slot="core"]')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Add White Tee to canvas', exact: true }).click()
+  await expect(canvas.locator('[data-garment-slot="dress"]')).toHaveCount(0)
+  expect(await canvas.locator('[data-garment-slot]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-garment-slot')))).toEqual(['core', 'shoes', 'hat'])
+})
+
+test('shirts and dresses replace each other before saving', async ({ page }) => {
+  const calls = await setup(page)
+  await page.goto('/matcher')
+  await page.getByRole('button', { name: 'Add Everyday Dress to canvas', exact: true }).click()
+  await page.getByRole('button', { name: 'Add Cotton T-shirt to canvas', exact: true }).click()
+  await expect(page.getByLabel('Selected clothes', { exact: true }).locator('article')).toHaveCount(1)
+  await expect(page.locator('[data-garment-slot="dress"]')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Add Everyday Dress to canvas', exact: true }).click()
+  await expect(page.locator('[data-garment-slot="core"]')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Check outfit with AI', exact: true })).toBeDisabled()
+  await page.getByRole('button', { name: 'Save Look', exact: true }).click()
+  await page.getByLabel('Look name', { exact: true }).fill('Dress outfit')
+  await page.getByRole('button', { name: 'Save to my account', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  expect(calls.find((call) => call.path === '/api/looks' && call.body)?.body?.selection).toHaveLength(1)
+})
+
+test('private photo links are reused between wardrobe and matcher', async ({ page }) => {
+  await setup(page)
+  let photoRequests = 0
+  await page.route('**/api/wardrobe', (route) => route.fulfill({ json: [{ wardrobe_item_id: 'cached-shirt', name: 'Cached Shirt', category_id: 'tops', clothing_type: 'shirts', color: 'white', size: 'M', image_url: `${userId}/shirt.png` }] }))
+  await page.route('**/api/wardrobe/*/image', (route) => {
+    photoRequests++
+    return route.fulfill({ json: { url: '/clothes/photos/shirts.jpg', expires_in: 300 } })
+  })
+  await page.goto('/wardrobe')
+  await expect(page.getByRole('img', { name: 'Cached Shirt', exact: true })).toBeVisible()
+  await page.getByRole('link', { name: 'Match with Store', exact: true }).click()
+  await expect(page.getByLabel('Selected clothes', { exact: true }).getByRole('heading', { name: 'Cached Shirt' })).toBeVisible()
+  expect(photoRequests).toBe(1)
 })
 
 test('collections show eight cards in four columns while storefront has no pagination', async ({ page }) => {
@@ -698,3 +735,25 @@ test('admin lists load alongside one access check and stalled orders can be retr
   await expect(page.getByRole('alert')).toHaveCount(0)
   expect(orderCalls).toBe(initialOrderCalls + 1)
 })
+
+
+test('Men and Women filters use database departments across collections and matcher', async ({ page }) => {
+  await setup(page)
+  await page.route('**/api/wishlist**', (route) => route.fulfill({ json: products.map((product) => ({ product_id: product.product_id, products: product })) }))
+  await page.route('**/api/wardrobe', (route) => route.fulfill({ json: products.map((product) => ({ ...product, wardrobe_item_id: product.product_id, color: 'cream', size: 'M', image_url: 'private/photo.jpg' })) }))
+  await page.route('**/api/wardrobe/*/image', (route) => route.fulfill({ json: { url: '/clothes/photos/jeans.jpg', expires_in: 300 } }))
+  for (const path of ['/catalogue', '/clothes', '/wishlist', '/wardrobe', '/matcher']) {
+    await page.goto(path)
+    const filter = page.getByRole('group', { name: 'Clothing department', exact: true })
+    const cards = path === '/matcher' ? page.locator('.archive-item') : page.locator('.product-card')
+    await filter.getByRole('button', { name: 'Men', exact: true }).click()
+    await expect(cards.filter({ hasText: 'Cotton T-shirt' })).toHaveCount(1)
+    await expect(cards.filter({ hasText: 'Straight Jeans' })).toHaveCount(1)
+    await expect(cards.filter({ hasText: 'Everyday Dress' })).toHaveCount(0)
+    await filter.getByRole('button', { name: 'Women', exact: true }).click()
+    await expect(cards.filter({ hasText: 'Cotton T-shirt' })).toHaveCount(1)
+    await expect(cards.filter({ hasText: 'Everyday Dress' })).toHaveCount(1)
+    await expect(cards.filter({ hasText: 'Straight Jeans' })).toHaveCount(0)
+  }
+})
+

@@ -64,9 +64,24 @@ export function GarmentLayer({ garment }: { garment: Garment }) {
   }, [url])
   if (!url) return null
   const bounds = loaded?.url === url ? loaded.bounds : null
+  // Reviewed single-shoe assets declare their view in the Storage object name.
+  // Unknown/user-uploaded pair photos keep their full aspect ratio instead.
+  const shoeView = garment.slot === 'shoes' ? url.match(/shoe-single-(left|right)-/)?.[1] : undefined
+  const viewBox = bounds ? `${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}` : '0 0 300 400'
+  const photo = <image href={url} width={bounds?.naturalWidth ?? 300} height={bounds?.naturalHeight ?? 400} preserveAspectRatio="xMidYMid meet" />
+  if (shoeView && bounds) {
+    const height = /boot/i.test(garment.name) ? 48 : /high.top/i.test(garment.name) ? 36 : 28
+    return <g data-garment-slot="shoes" data-clothing-type={garment.clothingType}>
+      {['left', 'right'].map((foot) => <g key={foot} data-shoe-foot={foot} transform={foot === 'right' ? 'translate(320 0) scale(-1 1)' : undefined}>
+        <svg x={103} y={438 - height} width={48} height={height} viewBox={viewBox} preserveAspectRatio="xMaxYMax meet">
+          <g transform={shoeView === 'right' ? `translate(${2 * bounds.x + bounds.width} 0) scale(-1 1)` : undefined}>{photo}</g>
+        </svg>
+      </g>)}
+    </g>
+  }
   return <g data-garment-slot={garment.slot} data-clothing-type={garment.clothingType}>
-    <svg {...garmentPlacement(garment)} viewBox={bounds ? `${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}` : '0 0 300 400'} preserveAspectRatio="none" overflow="visible">
-      <image href={url} width={bounds?.naturalWidth ?? 300} height={bounds?.naturalHeight ?? 400} preserveAspectRatio="xMidYMid meet" />
+    <svg {...garmentPlacement(garment)} viewBox={viewBox} preserveAspectRatio={garment.slot === 'shoes' ? 'xMidYMax meet' : 'none'} overflow="visible">
+      {photo}
     </svg>
   </g>
 }

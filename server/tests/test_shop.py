@@ -190,7 +190,23 @@ def test_upload_validates_image_content_and_uses_owned_key(client, monkeypatch):
     result = client.post('/api/wardrobe/images', headers=AUTH, files={'file': ('photo.png', image.getvalue(), 'image/png')})
     assert result.status_code == 201
     assert result.json()['image_url'].startswith(USER + '/')
-    assert mock.call_args.kwargs['content_type'] == 'image/png'
+    assert result.json()['image_url'].endswith('.webp')
+    assert mock.call_args.kwargs['content_type'] == 'image/webp'
+
+
+def test_uploaded_photo_is_small_and_retains_transparency(client, monkeypatch):
+    from PIL import ImageDraw
+    mock = mock_db(monkeypatch, [{'id': USER}, {'Key': 'uploaded'}])
+    image = Image.new('RGBA', (2400, 1800), (0, 0, 0, 0))
+    ImageDraw.Draw(image).ellipse((100, 100, 2300, 1700), fill='navy')
+    original = BytesIO()
+    image.save(original, 'PNG')
+    response = client.post('/api/wardrobe/images', headers=AUTH, files={'file': ('photo.png', original.getvalue(), 'image/png')})
+    assert response.status_code == 201
+    with Image.open(BytesIO(mock.call_args.kwargs['content'])) as photo:
+        assert photo.format == 'WEBP'
+        assert max(photo.size) == 720
+        assert photo.getchannel('A').getextrema() == (0, 255)
 
 
 @pytest.mark.parametrize(('content', 'mime', 'expected'), [
@@ -293,3 +309,13 @@ def test_pooled_gateway_reuses_connection_without_sharing_identity(monkeypatch):
         assert len(clients) == 1
     assert clients[0].is_closed
     assert tokens == ['Bearer first', 'Bearer first', 'Bearer second', 'Bearer second']
+
+
+@pytest.mark.parametrize('category', ['tops', 'bottoms'])
+def test_saved_look_rejects_dress_with_top_or_bottom(client, monkeypatch, category):
+    db = mock_db(monkeypatch, [{'id': USER}, [{'category_id': 'dresses'}], [{'category_id': category}]])
+    response = client.post('/api/looks', headers=AUTH, json={'name': 'Invalid outfit', 'occasion': 'weekend',
+        'selection': [{'garmentId': str(uuid4()), 'size': 'M'}, {'garmentId': str(uuid4()), 'size': 'M'}]})
+    assert response.status_code == 422
+    assert 'dress' in response.json()['detail'].lower()
+    assert db.call_count == 3

@@ -125,9 +125,10 @@ def test_same_product_different_sizes_rejected(client, monkeypatch):
 
 
 @pytest.mark.parametrize('sources', [('store', 'store'), ('wardrobe', 'store'), ('store', 'wardrobe'), ('wardrobe', 'wardrobe')])
-def test_dress_and_jeans_rejected_before_photos_or_ai(client, monkeypatch, sources):
+@pytest.mark.parametrize(('category', 'kind'), [('bottoms', 'jeans'), ('tops', 'shirts'), ('tops', 'hoodies')])
+def test_dress_conflicts_rejected_before_photos_or_ai(client, monkeypatch, sources, category, kind):
     records, selections = [], []
-    for source, category, kind in zip(sources, ['dresses', 'bottoms'], ['dresses', 'jeans']):
+    for source, category, kind in zip(sources, ['dresses', category], ['dresses', kind]):
         record = {'name': kind, 'category_id': category, 'clothing_type': kind, 'image_url': f'{USER}/{kind}.jpg'}
         if source == 'store':
             row = store()
@@ -157,6 +158,16 @@ def test_top_jeans_shoes_hat_match_can_include_four_items(client, monkeypatch):
     mock_ai(monkeypatch)
     selections = [{'source': 'store', 'variant_id': str(uuid4())} for _ in rows]
     assert client.post('/api/matches', json=body(items=selections)).status_code == 200
+
+
+def test_optimized_webp_is_accepted_for_ai_and_alpha_is_white():
+    from app.services.matching import normalize_photo
+    import base64
+    image = BytesIO()
+    Image.new('RGBA', (4, 4), (0, 0, 0, 0)).save(image, 'WEBP')
+    encoded = normalize_photo(image.getvalue()).split(',', 1)[1]
+    with Image.open(BytesIO(base64.b64decode(encoded))) as photo:
+        assert photo.getpixel((0, 0)) == (255, 255, 255)
 
 
 def test_wardrobe_photo_is_normalized_and_sent_only_after_ownership_check(client, monkeypatch):

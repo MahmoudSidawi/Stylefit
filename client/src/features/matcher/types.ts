@@ -1,8 +1,9 @@
-import type { Variant } from '../../services/shopApi'
+import type { Department, Variant } from '../../services/shopApi'
 export type Slot = 'core' | 'anchor' | 'dress' | 'shoes' | 'hat'
 export type Occasion = 'evening' | 'work' | 'weekend'
 export type ArchiveSource = 'store' | 'wardrobe'
 export type Garment = {
+  department?: Department
   variants?: Variant[]
   id: string
   productId?: string

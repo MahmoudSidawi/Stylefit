@@ -1,0 +1,4 @@
+.department-filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+.department-filter button { flex: 1; min-width: 45px; min-height: 36px; padding: 8px 10px; border: 1px solid var(--sf-border); border-radius: 8px; background: var(--sf-surface); color: var(--sf-ink); font: inherit; font-size: 12px; }
+.department-filter button[aria-pressed='true'] { background: var(--sf-primary); color: white; border-color: var(--sf-primary); }
+.department-filter button:focus-visible { outline: 2px solid var(--sf-primary); outline-offset: 2px; }

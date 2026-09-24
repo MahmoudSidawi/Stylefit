@@ -1,3 +1,4 @@
+import { DepartmentSelect } from '../../../components/ui/DepartmentFilter'
 import { shopApi } from '../../../services/shopApi'
 import { useRemote } from '../../live/hooks'
 import { useEffect, useRef, useState } from 'react'
@@ -30,6 +31,7 @@ export function GarmentForm({
       ? { ...item }
       : {
           name: '',
+          department: 'unisex',
           material: '',
           size: '',
           image: '',
@@ -251,6 +253,7 @@ export function GarmentForm({
               </select>
             </label>
           </div>
+          <DepartmentSelect value={draft.department} onChange={(department) => setDraft({ ...draft, department })} />
           <label htmlFor="garment-material">
             Fabric / material
             <input

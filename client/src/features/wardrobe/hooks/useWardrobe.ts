@@ -38,7 +38,7 @@ export function useWardrobe() {
   const items: WardrobeItem[] = (remote.data ?? []).map((row) => {
     const key = `${userId}:${row.wardrobe_item_id}:${row.image_url}`
     const photo = cachedWardrobePhoto(key) ?? photos[key]
-    return { id: row.wardrobe_item_id, name: row.name, kind: isKind(row.clothing_type) ? row.clothing_type : row.category_id === 'shoes' ? 'shoes' : row.category_id === 'hats' ? 'hats' : row.category_id === 'dresses' ? 'dresses' : row.category_id === 'bottoms' ? 'pants' : 't-shirts',
+    return { id: row.wardrobe_item_id, name: row.name, department: row.department, kind: isKind(row.clothing_type) ? row.clothing_type : row.category_id === 'shoes' ? 'shoes' : row.category_id === 'hats' ? 'hats' : row.category_id === 'dresses' ? 'dresses' : row.category_id === 'bottoms' ? 'pants' : 't-shirts',
       color: isColor(row.color) ? row.color : 'cream', rawColor: row.color ?? '', material: row.material ?? '', size: row.size ?? 'One size',
       image: photo?.url ?? '', imageError: photo?.error, addedAt: 0, record: row }
   })
@@ -51,7 +51,7 @@ export function useWardrobe() {
         image = (await shopApi.uploadWardrobeImage(new File([blob], 'garment.' + (blob.type === 'image/png' ? 'png' : 'jpg'), { type: blob.type }))).image_url
       }
       if (!image) throw new Error('Choose a JPG or PNG photo.')
-      const body: Omit<WardrobeRecord, 'wardrobe_item_id'> = { name: draft.name, category_id: kinds[draft.kind].category as 'tops' | 'bottoms' | 'dresses' | 'shoes' | 'hats', clothing_type: draft.kind,
+      const body: Omit<WardrobeRecord, 'wardrobe_item_id'> = { name: draft.name, department: draft.department ?? 'unisex', category_id: kinds[draft.kind].category as 'tops' | 'bottoms' | 'dresses' | 'shoes' | 'hats', clothing_type: draft.kind,
         color: existing && draft.color === existing.color ? existing.record?.color ?? draft.color : draft.color,
         material: draft.material || null, size: draft.size || null, image_url: image, style: existing?.record?.style ?? 'casual', pattern: existing?.record?.pattern ?? 'solid' }
       if (id) await shopApi.updateGarment(id, body)

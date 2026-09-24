@@ -121,3 +121,4 @@
 @media (max-width: 680px) { .matcher-page .outfit-person { height: 350px; } }
 
 .matcher-page .archive-thumbnail img, .matcher-page .selected-piece > img { object-fit: contain; }
+.matcher-page .preview-caption { position: static; display: block; padding: 0 12px 10px; text-align: center; }
