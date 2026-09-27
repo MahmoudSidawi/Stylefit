@@ -45,7 +45,7 @@ export function StorefrontFooter() {
           <h3>Ethics & AI</h3>
           <p>
             AI styling scores are subjective estimates, not guarantees of fit.
-            Only selected wardrobe photos and optional details you choose to include
+            Selected wardrobe photos and any optional profile or style history you choose to include
             are sent for analysis. Orders use cash on delivery.
           </p>
         </div>

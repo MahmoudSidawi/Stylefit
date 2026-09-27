@@ -122,3 +122,10 @@
 
 .matcher-page .archive-thumbnail img, .matcher-page .selected-piece > img { object-fit: contain; }
 .matcher-page .preview-caption { position: static; display: block; padding: 0 12px 10px; text-align: center; }
+.match-context { display:flex; gap:18px; flex-wrap:wrap; align-items:center; padding-block:14px; color:#623d59; }
+.match-context strong { border-radius:20px; background:#ede4ef; padding:9px 16px; }
+.match-context span { font-size:12px; }
+.history-personalization { margin-top:14px; padding:14px; border-radius:12px; background:#f5f0f7; font-size:12px; line-height:1.65; }
+.match-comparison { padding:14px; border-radius:12px; background:#e9f2e8; color:#30513b; font-weight:600; line-height:1.6; }
+.ai-recommendations button { margin-top:12px; }
+.ai-recommendations small { white-space:normal; line-height:1.5; display:block; margin-top:6px; }

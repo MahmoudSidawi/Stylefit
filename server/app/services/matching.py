@@ -90,3 +90,52 @@ async def selected_items(body: MatchRequest, user: Identity):
         if rows:
             profile = {key: rows[0].get(key) for key in PROFILE_FIELDS if rows[0].get(key) is not None}
     return items, images, profile
+
+
+async def style_history(user: Identity) -> dict:
+    saved = await database.request('GET', 'rest/v1/wishlist_items', user.token, params={
+        'user_id': f'eq.{user.user_id}', 'limit': '20', 'order': 'created_at.desc',
+        'select': 'products(name,category_id,clothing_type,style,pattern)',
+    })
+    orders = await database.request('GET', 'rest/v1/orders', user.token, params={
+        'user_id': f'eq.{user.user_id}', 'status': 'neq.cancelled', 'limit': '10',
+        'order': 'created_at.desc', 'select': 'order_items(product_name,color,size)',
+    })
+    # No identity, delivery, payment details or private photos enter the history prompt.
+    saved_items = [{key: row['products'].get(key) for key in ('name', 'category_id', 'clothing_type', 'style', 'pattern')}
+                   for row in saved if row.get('products')]
+    ordered_items = [{key: item.get(key) for key in ('product_name', 'color', 'size')}
+                     for order in orders for item in order.get('order_items', [])][:40]
+    return {'saved_items': saved_items, 'ordered_items': ordered_items,
+            'saved_count': len(saved_items), 'order_count': len(orders)}
+
+
+async def recommendation_candidates(user: Identity, items: list[dict], profile: dict) -> list[dict]:
+    rows = await database.request('GET', 'rest/v1/product_variants', user.token, params={
+        'is_active': 'eq.true', 'stock_quantity': 'gt.0', 'products.is_active': 'eq.true',
+        'limit': '300', 'order': 'product_id,size',
+        'select': 'variant_id,product_id,size,color,image_url,products!inner(name,category_id,clothing_type,style,pattern)',
+    })
+    selected_names = {item.get('name') for item in items}
+    choices = {}
+    for row in rows:
+        product = row['products']
+        if product['name'] in selected_names:
+            continue
+        key = row['product_id']
+        if key not in choices or row['size'] == profile.get('clothing_size'):
+            choices[key] = {'candidate_id': row['variant_id'], **row, **product}
+    return list(choices.values())[:60]
+
+
+def resolve_recommendations(suggestions, candidates: list[dict]) -> list[dict]:
+    available = {str(item['candidate_id']): item for item in candidates}
+    result, seen = [], set()
+    for suggestion in suggestions:
+        key = str(suggestion.candidate_id)
+        if key not in available or key in seen:
+            continue
+        seen.add(key)
+        item = available[key]
+        result.append({field: str(item[field]) for field in ('variant_id', 'product_id', 'name', 'image_url', 'size', 'color')} | {'reason': suggestion.reason})
+    return result

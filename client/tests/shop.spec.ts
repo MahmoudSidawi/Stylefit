@@ -10,6 +10,41 @@ const products = ['Cotton T-shirt', 'Straight Jeans', 'Everyday Dress'].map((nam
 }))
 const dimension = { score: 86, explanation: 'These pieces work well together.' }
 
+test('personalized recommendations replace a piece and compare fresh scores', async ({ page }) => {
+  await setup(page)
+  const replacement = { ...products[0], product_id: 'replacement', name: 'Oxford Shirt', clothing_type: 'shirts',
+    product_variants: [{ ...products[0].product_variants[0], variant_id: 'replacement-variant' }] }
+  await page.route('**/api/products?**', route => route.fulfill({ json: { items: [...products, replacement], total: 4, mode: 'live' } }))
+  const requests: Record<string, unknown>[] = []
+  await page.route('**/api/matches', route => {
+    requests.push(route.request().postDataJSON())
+    return route.fulfill({ json: { score: requests.length === 1 ? 65 : 84, explanation: 'The shirt brings more structure for the office.',
+      colors: dimension, styles: dimension, patterns: dimension, clothing_types: dimension, occasion: dimension, suggestions: [],
+      used_profile: true, used_history: true, history_saved_count: 4, history_order_count: 2,
+      personalization_note: 'Your saved shirts informed this recommendation.',
+      recommendations: [{ variant_id: 'replacement-variant', product_id: 'replacement', name: 'Oxford Shirt', image_url: '/clothes/basic-tee.svg', size: 'M', color: 'Cream', reason: 'A shirt is more appropriate for the office.' }] } })
+  })
+  await page.goto('/matcher')
+  await page.getByRole('button', { name: 'Add Cotton T-shirt to canvas', exact: true }).click()
+  await page.getByRole('button', { name: 'Add Straight Jeans to canvas', exact: true }).click()
+  await page.getByLabel('Outfit occasion').selectOption('work')
+  await page.getByLabel('Use saved clothes and order history').check()
+  await page.getByLabel('Include saved profile in AI analysis').check()
+  await page.getByRole('button', { name: 'Check outfit with AI', exact: true }).click()
+  await expect(page.getByText('4 saved pieces · 2 recent orders')).toBeVisible()
+  await page.getByRole('button', { name: 'Try suggested Oxford Shirt', exact: true }).click()
+  await expect(page.getByLabel('Selected clothes', { exact: true }).getByRole('heading', { name: 'Oxford Shirt' })).toBeVisible()
+  await expect(page.getByLabel('Selected clothes', { exact: true }).getByRole('heading', { name: 'Cotton T-shirt' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Check outfit with AI', exact: true }).click()
+  await expect(page.getByText('Before: 65% → Now: 84% (+19 points)')).toBeVisible()
+  expect(requests[1]).toMatchObject({ include_history: true, include_profile: true, occasion: 'work' })
+  expect(requests[1].items).toContainEqual({ source: 'store', variant_id: 'replacement-variant' })
+  await page.getByLabel('Outfit occasion').selectOption('evening')
+  await expect(page.getByText('Styling for: Outing / Evening')).toBeVisible()
+  await expect(page.locator('.match-comparison')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Try suggested Oxford Shirt' })).toHaveCount(0)
+})
+
 test('garment-only photos align by clothing type without silhouette clipping', async ({ page }) => {
   await setup(page)
   const entries = [

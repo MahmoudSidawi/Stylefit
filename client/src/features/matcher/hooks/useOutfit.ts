@@ -27,8 +27,10 @@ export function useOutfit(wardrobeId?: string) {
   const [occasion, setOccasion] = useState<Occasion>('weekend')
   const [name, setName] = useState('Everyday essentials')
   const [includeProfile, setIncludeProfile] = useState(false)
+  const [includeHistory, setIncludeHistory] = useState(false)
+  const [previousScore, setPreviousScore] = useState<number | null>(null)
   const [analysis, setAnalysis] = useState<{ signature: string; result: AiMatch } | null>(null)
-  const signature = JSON.stringify([selection, occasion, includeProfile])
+  const signature = JSON.stringify([selection, occasion, includeProfile, includeHistory])
   const ai = analysis?.signature === signature ? analysis.result : null
   const result: MatchResult | null = ai ? { score: ai.score, color: ai.colors.score, silhouette: ai.clothing_types.score, occasion: ai.occasion.score,
     colorNote: ai.colors.explanation, silhouetteNote: ai.clothing_types.explanation, occasionNote: ai.occasion.explanation, note: ai.explanation } : null
@@ -41,6 +43,7 @@ export function useOutfit(wardrobeId?: string) {
   })
   const storePieces = selected.filter(({ garment }) => garment.source === 'store')
   function stage(garment: Garment) {
+    setPreviousScore(null)
     setSelection((current) => [...current.filter((entry) => !slotsConflict(garments.find((g) => g.id === entry.garmentId)?.slot, garment.slot)), { garmentId: garment.id, size: garment.sizes[1] ?? garment.sizes[0] }])
   }
   function references(): MatchSelection[] {
@@ -51,15 +54,26 @@ export function useOutfit(wardrobeId?: string) {
       return { source: 'store', variant_id: variant.variant_id }
     })
   }
-  return { garments, selection, selected, occasion, setOccasion, name, setName, result, ai, includeProfile, setIncludeProfile,
+  return { garments, selection, selected, occasion, setOccasion: (value: Occasion) => { setOccasion(value); setPreviousScore(null) }, name, setName, result, ai, previousScore,
+    includeProfile, setIncludeProfile: (value: boolean) => { setIncludeProfile(value); setPreviousScore(null) },
+    includeHistory, setIncludeHistory: (value: boolean) => { setIncludeHistory(value); setPreviousScore(null) },
+    stageRecommendation: (variantId: string) => {
+      const garment = garments.find((item) => item.variants?.some((variant) => variant.variant_id === variantId))
+      const variant = garment?.variants?.find((item) => item.variant_id === variantId)
+      if (!garment || !variant) return
+      stage(garment)
+      setSelection((current) => current.map((entry) => entry.garmentId === garment.id ? { ...entry, size: variant.size } : entry))
+      setPreviousScore(ai?.score ?? null)
+    },
     storePieces, total: storePieces.reduce((sum, { garment }) => sum + garment.price, 0), stage,
     loading: catalogue.loading || wardrobe.loading, error: action.error || catalogue.error || wardrobe.error, busy: action.busy,
     remove: (id: string) => setSelection((current) => current.filter((entry) => entry.garmentId !== id)),
     changeSize: (id: string, size: string) => setSelection((current) => current.map((entry) => entry.garmentId === id ? { ...entry, size } : entry)),
-    checkMatch: () => action.run(async () => { if (selected.length < 2) throw new Error('Select two to five pieces.'); setAnalysis({ signature, result: await shopApi.match(references(), occasion, includeProfile) }) }),
+    checkMatch: () => action.run(async () => { if (selected.length < 2) throw new Error('Select two to five pieces.'); setAnalysis({ signature, result: await shopApi.match(references(), occasion, includeProfile, includeHistory, true) }) }),
     addToBag: () => action.run(async () => { for (const item of references()) if (item.source === 'store') await shopApi.addToCart(item.variant_id) }),
-    reset: () => { setSelection([]); setAnalysis(null) },
+    reset: () => { setSelection([]); setAnalysis(null); setPreviousScore(null) },
     load: (look: SavedLook) => {
+      setPreviousScore(null)
       const valid = look.selection.filter((entry) => garments.some((g) => g.id === entry.garmentId && g.sizes.includes(entry.size)))
       setSelection(valid.reduce<Selection[]>((current, entry) => {
         const garment = garments.find((g) => g.id === entry.garmentId)!
@@ -67,5 +81,5 @@ export function useOutfit(wardrobeId?: string) {
       }, []))
       setOccasion(look.occasion); setName(look.name)
     },
-    clear: () => setSelection([]) }
+    clear: () => { setSelection([]); setPreviousScore(null) } }
 }

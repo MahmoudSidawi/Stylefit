@@ -58,7 +58,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
     setMessage(`${garment.name} is on your canvas.`)
   }
   async function addLookToBag() {
-    if (await outfit.addToBag()) navigate('/cart')
+    if (await outfit.addToBag()) setMessage('Your store pieces have been added to your bag.')
   }
 
   return (
@@ -86,6 +86,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
             </div>
             <div className="studio-settings">
               <label><input type="checkbox" checked={outfit.includeProfile} onChange={(event) => outfit.setIncludeProfile(event.target.checked)} /> Include saved profile in AI analysis</label>
+              <label><input type="checkbox" checked={outfit.includeHistory} onChange={(event) => outfit.setIncludeHistory(event.target.checked)} /> Use saved clothes and order history</label>
               <button
                 className="saved-looks-trigger"
                 onClick={() => setDialog('saved')}
@@ -118,6 +119,10 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
             </div>
           </div>
         </section>
+        <div className="studio-container match-context" aria-live="polite">
+          <strong>Styling for: {occasionLabels[outfit.occasion]}</strong>
+          <span>{outfit.includeHistory ? 'Saved clothes and recent orders will inform this check.' : 'Style history is off.'} {outfit.includeProfile ? 'Saved profile included.' : ''}</span>
+        </div>
         <div className="studio-container"><Notice loading={outfit.loading} error={outfit.error} /></div>
         <AccountGate><div className="studio-container mobile-workspace-switch" role="group" aria-label="Fitting workspace panels">
           <button aria-pressed={mobilePanel === 'clothes'} onClick={() => setMobilePanel('clothes')}>Choose clothes</button>
@@ -152,8 +157,9 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
             result={outfit.result}
             count={outfit.selection.length}
             ai={outfit.ai}
-            alternative={outfit.garments.find((g) => g.source === 'store' && g.slot === 'core' && !outfit.selection.some((entry) => entry.garmentId === g.id))}
-            onAlternative={stage}
+            previousScore={outfit.previousScore}
+            busy={outfit.busy}
+            onRecommendation={outfit.stageRecommendation}
           />
         </div></AccountGate>
         <details className="studio-container styling-tips"><summary>Styling tips</summary><p>Start with a top and bottom. Try complementary colors, balance relaxed and structured pieces, and choose an occasion for more relevant feedback. Save your favorite combinations to revisit later.</p></details>
@@ -168,6 +174,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
           <>
             <Icon name="check" />
             <span>{message}</span>
+            {message.includes('added to your bag') && <button onClick={() => navigate('/cart')}>View bag</button>}
             <button
               className="icon-button"
               aria-label="Dismiss notification"
@@ -188,7 +195,7 @@ function MatcherWorkspace({ wardrobeId }: { wardrobeId?: string }) {
             if (
               await saved.save({
                 name,
-                selection: outfit.selection.map((entry) => ({ ...entry })),
+                selection: outfit.selected.map(({ garment, size }) => ({ garmentId: garment.id, size })),
                 occasion: outfit.occasion,
               })
             ) {

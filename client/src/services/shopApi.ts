@@ -22,6 +22,8 @@ export type CartRecord = { cart_item_id: string; variant_id: string; quantity: n
 export type MatchSelection = { source: 'store'; variant_id: string } | { source: 'wardrobe'; wardrobe_item_id: string }
 export type Dimension = { score: number; explanation: string }
 export type AiMatch = {
+  personalization_note?: string; used_history?: boolean; history_saved_count?: number; history_order_count?: number
+  recommendations?: { variant_id: string; product_id: string; name: string; image_url: string; size: string; color: string; reason: string }[]
   score: number; explanation: string; colors: Dimension; styles: Dimension; patterns: Dimension
   clothing_types: Dimension; occasion: Dimension; suggestions: string[]; provider: 'groq'
   model: string; used_profile: boolean; images_analyzed: number; disclaimer: string
@@ -87,8 +89,8 @@ export const shopApi = {
   adminOrders: () => apiRequest<Order[]>('/api/admin/orders'),
   updateOrder: (orderId: string, status: OrderStatus, isPaid: boolean) =>
     apiRequest<null>(`/api/admin/orders/${id(orderId)}`, json('PATCH', { status, is_paid: isPaid })),
-  match: (items: MatchSelection[], occasion: string, includeProfile: boolean) =>
-    apiRequest<AiMatch>('/api/matches', json('POST', { items, occasion, include_profile: includeProfile })),
+  match: (items: MatchSelection[], occasion: string, includeProfile: boolean, includeHistory = false, includeRecommendations = false) =>
+    apiRequest<AiMatch>('/api/matches', json('POST', { items, occasion, include_profile: includeProfile, include_history: includeHistory, include_recommendations: includeRecommendations })),
   analyzeGarment: (itemId: string) => apiRequest<GarmentAnalysis>(`/api/wardrobe/${id(itemId)}/analyze`, { method: 'POST' }),
   adminMe: () => apiRequest<Profile>('/api/admin/me'),
   adminUsers: () => apiRequest<Pick<Profile, 'user_id' | 'name' | 'email' | 'role'>[]>('/api/admin/users'),
